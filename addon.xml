@@ -3,7 +3,7 @@
 	id="plugin.video.mmabrowser"
 	name="MMA Browser"
 	version="0.0.1"
-	provider-name="paddycarey, putneyj, Martijn Kaijser"
+	provider-name="paddycarey"
     >
   <requires>
     <import addon="xbmc.python" version="2.0"/>
