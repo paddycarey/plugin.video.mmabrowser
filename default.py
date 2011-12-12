@@ -165,7 +165,7 @@ def doTestRun():
     log( 'City:      %s' % card.city )
     for fight in card.fights:
         for fighter in fight['fighters']:
-            details = fighterDetails(fighter)
+            details = getFighterDetails(fighter)
             log()
             log( '##### Fighter Details #####' )
             log( 'Name:          %s' % details.name )
