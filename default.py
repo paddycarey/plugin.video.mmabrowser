@@ -55,7 +55,7 @@ def getHtml(url):
     else:
         return data
 
-def rescanLibrary(path)
+def rescanLibrary(path):
     pathWalk = os.walk(path)
     log( pathWalk )
 
