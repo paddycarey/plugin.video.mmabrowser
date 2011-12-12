@@ -153,7 +153,7 @@ def getAvailableFights(sherdogFighterID, library):
                 if fighter == sherdogFighterID:
                     log('Fought on: ID: %s Name: %s' % (card.ID, card.title))
 
-def doTestRun()
+def doTestRun():
     # Simple test run
     card = fightCard('9529')
     
