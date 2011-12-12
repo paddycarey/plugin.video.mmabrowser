@@ -51,7 +51,7 @@ def getHtml(url):
         data = client.read()
         client.close()
     except:
-        log( 'Error getting data from: %s' % url
+        log( 'Error getting data from: %s' % url )
     else:
         return data
 
