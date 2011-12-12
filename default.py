@@ -155,7 +155,7 @@ def getAvailableFights(sherdogFighterID, library):
 
 def doTestRun():
     # Simple test run
-    card = fightCard('9529')
+    card = getEventDetails('9529')
     
     log( '##### Event Details #####' )
     log( 'Name:      %s' % card.title )
