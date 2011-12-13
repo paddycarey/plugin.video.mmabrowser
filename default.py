@@ -18,14 +18,18 @@ from urllib2 import urlopen
 from BeautifulSoup import BeautifulSoup
 
 ### get addon info
-__addon__       = xbmcaddon.Addon()
-__addonid__     = __addon__.getAddonInfo('id')
-__addonidint__  = int(sys.argv[1])
-__addonname__   = __addon__.getAddonInfo('name')
-__author__      = __addon__.getAddonInfo('author')
-__version__     = __addon__.getAddonInfo('version')
-__localize__    = __addon__.getLocalizedString
-__addonpath__   = __addon__.getAddonInfo('path')
+__addon__             = xbmcaddon.Addon()
+__addonid__           = __addon__.getAddonInfo('id')
+__addonidint__        = int(sys.argv[1])
+__addonname__         = __addon__.getAddonInfo('name')
+__author__            = __addon__.getAddonInfo('author')
+__version__           = __addon__.getAddonInfo('version')
+__localize__          = __addon__.getLocalizedString
+__addonpath__         = __addon__.getAddonInfo('path')
+__addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+__thumbDir__          = os.path.join(__addondir__, 'thumbs')
+__fighterThumbDir__   = os.path.join(__thumbDir__, 'fighters')
+__promotionThumbDir__ = os.path.join(__thumbDir__, 'promotions')
 
 ### adjust default timeout to stop script hanging
 timeout = 20
@@ -244,14 +248,17 @@ def browseByOrganisation(libraryList):
         card = getEventDetails(x['ID'])
         if not card.promotion in promotionList:
             promotionList.append(card.promotion)
-            addDir(card.promotion, "/browsebyorganisation/%s" % card.promotion, 1, "")
+            promotionThumb = card.promotion + '.jpg'
+            thumbPath = os.path.join(__promotionThumbDir__, promotionThumb)
+            addDir(card.promotion, "/browsebyorganisation/%s" % card.promotion, 1, thumbPath)
 
 def getEventsByOrganisation(libraryList, organisation):
     eventList = []
     for x in sorted(libraryList, key=lambda k: k['path']):
         card = getEventDetails(x['ID'])
         if card.promotion == organisation:
-            addDir(card.title, "/getEvent/%s" % card.ID, 1, "")
+            thumbPath = os.path.join(x['path'], 'folder.jpg')
+            addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
 
 def getEvent(libraryList, eventID):
     fileList = []
