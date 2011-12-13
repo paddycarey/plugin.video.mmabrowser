@@ -5,6 +5,7 @@
 # UFC 98 http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=9529
 
 import os
+import shelve
 import socket
 import sys
 import urllib
@@ -28,8 +29,9 @@ __localize__          = __addon__.getLocalizedString
 __addonpath__         = __addon__.getAddonInfo('path')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'thumbs')
-__fighterThumbDir__   = os.path.join(__thumbDir__, 'fighters')
-__promotionThumbDir__ = os.path.join(__thumbDir__, 'promotions')
+__fighterDir__        = os.path.join(__addondir__, 'fighters')
+__promotionDir__      = os.path.join(__addondir__, 'promotions')
+__eventDir__          = os.path.join(__addondir__, 'events')
 
 ### adjust default timeout to stop script hanging
 timeout = 20
@@ -78,51 +80,87 @@ def scanLibrary(path):
             event['path'] = x[0]
             library.append(event)
     return library
-            
+
+def downloadFile(url, filePath):
+
+    """
+    Download url to filePath.
+    """
+    try:
+        dlFile = open(filePath, "wb")
+        response = urlopen(url)
+        dlFile.write(response.read())
+        dlFile.close()
+        response.close()
+    except:
+        xbmcvfs.delete(filePath)
+    else:
+        log("Downloaded: %s" % url, xbmc.LOGNOTICE)
 
 class getEventDetails:
     
     def __init__(self, sherdogEventID):
-
-        url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=%s' % sherdogEventID
-        soup = BeautifulSoup(getHtml(url))
-
+        
+        shelveFilePath = os.path.join(__eventDir__, sherdogEventID)
+        shelveFile = shelve.open(shelveFilePath)
         self.ID = sherdogEventID
-        self.title = soup.find("div", {"class" : "Txt30Blue Bold SpacerLeft8"}).h1.string
-        self.promotion = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
-        self.date = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
-        self.venue = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip(',')
         try:
-            self.city = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip('\r\n')
+            self.title = shelveFile['title']
+            self.promotion = shelveFile['promotion']
+            self.date = shelveFile['date']
+            self.venue = shelveFile['venue']
+            self.city = shelveFile['city']
+            self.fights = shelveFile['fights']
         except:
-            self.city = ''
-        table = soup.find("table", {"class" : "fight_event_card"})
-        rows = table.findAll('tr')
-        self.fights = []
-        rowcount = 0
-        for row in rows:
-            if not rowcount == 0:
-                cols = row.findAll('td')
+            url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=%s' % sherdogEventID
+            soup = BeautifulSoup(getHtml(url))
+            self.title = soup.find("div", {"class" : "Txt30Blue Bold SpacerLeft8"}).h1.string
+            self.promotion = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
+            self.date = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
+            self.venue = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip(',')
+            try:
+                self.city = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip('\r\n')
+            except:
+                self.city = ''
+            table = soup.find("table", {"class" : "fight_event_card"})
+            rows = table.findAll('tr')
+            self.fights = []
+            rowcount = 0
+            for row in rows:
+                if not rowcount == 0:
+                    cols = row.findAll('td')
+                    
+                    fight = {}
+                    fight['ID'] = cols[0].string
+                    fight['fighters'] = []
+                    fight['fighters'].append(cols[1].a['href'].rsplit('-', 1)[1])
+                    fight['fighters'].append(cols[3].a['href'].rsplit('-', 1)[1])
+                    if cols[1].findAll(text=True)[1] == 'Winner':
+                        fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
+                    else:
+                        fight['winner'] = None
+                    fight['result'] = cols[4].string
+                    fight['round'] = cols[5].string
+                    fight['time'] = cols[6].string
+                    self.fights.append(fight)
+                    
+                rowcount = rowcount + 1
                 
-                fight = {}
-                fight['ID'] = cols[0].string
-                fight['fighters'] = []
-                fight['fighters'].append(cols[1].a['href'].rsplit('-', 1)[1])
-                fight['fighters'].append(cols[3].a['href'].rsplit('-', 1)[1])
-                if cols[1].findAll(text=True)[1] == 'Winner':
-                    fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
-                else:
-                    fight['winner'] = None
-                fight['result'] = cols[4].string
-                fight['round'] = cols[5].string
-                fight['time'] = cols[6].string
-                self.fights.append(fight)
-                
-            rowcount = rowcount + 1
+            shelveFile['title'] = self.title
+            shelveFile['promotion'] = self.promotion
+            shelveFile['date'] = self.date
+            shelveFile['venue'] = self.venue
+            shelveFile['city'] = self.city
+            shelveFile['fights'] = self.fights
+        shelveFile.close()
 
 class getFighterDetails:
     
     def __init__(self, sherdogFighterID):
+
+        url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?fighterID=%s' % sherdogFighterID
+        shelveFilePath = os.path.join(__fighterDir__, sherdogFighterID)
+        shelveFile = shelve.open(shelveFilePath)
 
         self.ID = sherdogFighterID
         self.name = None
@@ -137,45 +175,75 @@ class getFighterDetails:
         self.city = None
         self.country = None
 
-        url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?fighterID=%s' % sherdogFighterID
-        soup = BeautifulSoup(getHtml(url))
-
-        table = soup.find("span", {"id" : "fighter_profile"})
-        rows = table.findAll('tr')
-        for row in rows:
-            infoItem = row.findAll('td')
-            if infoItem[0].string == None:
-                continue
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Name':
-                self.name = infoItem[1].string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Nick Name':
-                self.nickName = infoItem[1].string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Association':
-                self.association = infoItem[1].a.string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Height':
-                self.height = infoItem[1].string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Weight':
-                self.weight = infoItem[1].string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Birth Date':
-                self.birthYear = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[0]
-                self.birthMonth = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[1]
-                self.birthDay = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[2]
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Age':
-                self.age = infoItem[1].string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'City':
-                self.city = infoItem[1].string.rstrip(' ').rstrip('\n')
-            if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Country':
-                self.country = infoItem[1].string.rstrip(' ').rstrip('\n')
-
-def getAvailableFights(sherdogFighterID, library):
-    for availableCard in library:
-        cardID = availableCard['ID']
-        cardPath = availableCard['path']
-        card = getEventDetails(cardID)
-        for fight in card.fights:
-            for fighter in fight['fighters']:
-                if fighter == sherdogFighterID:
-                    log('Fought on: ID: %s Name: %s' % (card.ID, card.title))
+        try:
+            self.name = shelveFile['name']
+            self.nickName = shelveFile['nickName']
+            self.association = shelveFile['association']
+            self.height = shelveFile['height']
+            self.weight = shelveFile['weight']
+            self.birthYear = shelveFile['birthYear']
+            self.birthMonth = shelveFile['birthMonth']
+            self.birthDay = shelveFile['birthDay']
+            self.age = shelveFile['age']
+            self.city = shelveFile['city']
+            self.country = shelveFile['country']
+            fighterThumb = self.ID + '.jpg'
+            thumbPath = os.path.join(__fighterDir__, fighterThumb)
+            if not xbmcvfs.exists(thumbPath):
+                soup = BeautifulSoup(getHtml(url))
+                thumbUrl = soup.find("span", {"id" : "fighter_picture"}).img['src']
+                if not thumbUrl == 'http://www.cdn.sherdog.com/fightfinder/Pictures/blank_fighter.jpg':
+                    downloadFile(thumbUrl, thumbPath)
+        except:
+            soup = BeautifulSoup(getHtml(url))
+    
+            table = soup.find("span", {"id" : "fighter_profile"})
+            rows = table.findAll('tr')
+            for row in rows:
+                infoItem = row.findAll('td')
+                if infoItem[0].string == None:
+                    continue
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Name':
+                    self.name = infoItem[1].string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Nick Name':
+                    self.nickName = infoItem[1].string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Association':
+                    self.association = infoItem[1].a.string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Height':
+                    self.height = infoItem[1].string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Weight':
+                    self.weight = infoItem[1].string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Birth Date':
+                    self.birthYear = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[0]
+                    self.birthMonth = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[1]
+                    self.birthDay = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[2]
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Age':
+                    self.age = infoItem[1].string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'City':
+                    self.city = infoItem[1].string.rstrip(' ').rstrip('\n')
+                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Country':
+                    self.country = infoItem[1].string.rstrip(' ').rstrip('\n')
+            
+            shelveFile['name'] = self.name
+            shelveFile['nickName'] = self.nickName
+            shelveFile['association'] = self.association
+            shelveFile['height'] = self.height
+            shelveFile['weight'] = self.weight
+            shelveFile['birthYear'] = self.birthYear
+            shelveFile['birthMonth'] = self.birthMonth
+            shelveFile['birthDay'] = self.birthDay
+            shelveFile['age'] = self.age
+            shelveFile['city'] = self.city
+            shelveFile['country'] = self.country
+        
+            fighterThumb = self.ID + '.jpg'
+            thumbPath = os.path.join(__fighterDir__, fighterThumb)
+            if not xbmcvfs.exists(thumbPath):
+                thumbUrl = soup.find("span", {"id" : "fighter_picture"}).img['src']
+                if not thumbUrl == 'http://www.cdn.sherdog.com/fightfinder/Pictures/blank_fighter.jpg':
+                    downloadFile(thumbUrl, thumbPath)
+                    
+        shelveFile.close()
 
 def get_params():
         param=[]
@@ -196,17 +264,20 @@ def get_params():
         return param
 
 def addLink(name,descr, url,iconimage):
+    if not xbmcvfs.exists(iconimage):
+        iconimage=''
     li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
     li.setProperty("IsPlayable", "true")
     li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr} )
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
 def addDir(name,path,page,iconimage):
+    if not xbmcvfs.exists(iconimage):
+        iconimage=''
     u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))
     li=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=iconimage)
     li.setInfo( type="Video", infoLabels={ "Title": name })
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
-
 
 def doTestRun():
     # Simple test run
@@ -240,7 +311,17 @@ def doTestRun():
 def allEvents(libraryList):
     for x in sorted(libraryList, key=lambda k: k['path']):
         card = getEventDetails(x['ID'])
-        addDir(card.title, "/getEvent/%s" % card.ID, 1, "")
+        thumbPath = os.path.join(x['path'], 'folder.jpg')
+        addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+
+def getUniq(seq): 
+    seen = []
+    result = []
+    for item in seq:
+        if item in seen: continue
+        seen.append(item)
+        result.append(item)
+    return result
 
 def browseByOrganisation(libraryList):
     promotionList = []
@@ -249,7 +330,7 @@ def browseByOrganisation(libraryList):
         if not card.promotion in promotionList:
             promotionList.append(card.promotion)
             promotionThumb = card.promotion + '.jpg'
-            thumbPath = os.path.join(__promotionThumbDir__, promotionThumb)
+            thumbPath = os.path.join(__promotionDir__, promotionThumb)
             addDir(card.promotion, "/browsebyorganisation/%s" % card.promotion, 1, thumbPath)
 
 def getEventsByOrganisation(libraryList, organisation):
@@ -259,6 +340,32 @@ def getEventsByOrganisation(libraryList, organisation):
         if card.promotion == organisation:
             thumbPath = os.path.join(x['path'], 'folder.jpg')
             addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+
+def browseByFighter(libraryList):
+    fighterList = []
+    processedFighterList = []
+    for x in sorted(libraryList, key=lambda k: k['path']):
+        card = getEventDetails(x['ID'])
+        for fight in card.fights:
+            fighterList.append(fight['fighters'][0])
+            fighterList.append(fight['fighters'][1])
+    for fighterID in getUniq(fighterList):
+        fighter = getFighterDetails(fighterID)
+        fighterThumb = fighterID + '.jpg'
+        thumbPath = os.path.join(__fighterDir__, fighterThumb)
+        processedFighterList.append([fighter.name, fighter.ID, thumbPath])
+    for fighterName, fighterID, thumbPath in sorted(processedFighterList):
+            addDir(fighterName, "/browsebyfighter/%s" % fighterID, 1, thumbPath)
+
+def getEventsByFighter(libraryList, fighterID):
+    eventList = []
+    for x in sorted(libraryList, key=lambda k: k['path']):
+        card = getEventDetails(x['ID'])
+        for fight in card.fights:
+            if fighterID in fight['fighters']:
+                thumbPath = os.path.join(x['path'], 'folder.jpg')
+                addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+                break
 
 def getEvent(libraryList, eventID):
     fileList = []
@@ -276,6 +383,9 @@ def getEvent(libraryList, eventID):
                         log('File ignored: %s' % vidFilePath)
 
 if (__name__ == "__main__"):
+
+    for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __promotionDir__, __eventDir__]:
+        xbmcvfs.mkdir(neededDir)
 
     params=get_params()
 
@@ -303,8 +413,14 @@ if (__name__ == "__main__"):
                 browseByOrganisation(scanLibrary('/media/raid5/mma_sorted'))
             else:
                 getEventsByOrganisation(scanLibrary('/media/raid5/mma_sorted'), organisation)
-        elif path == "/browsebyfighter/":
-            orderby = "relevance"
+        elif path.startswith("/browsebyfighter/"):
+            log("path:%s" % path)
+            fighterID = path.replace('/browsebyfighter/','')
+            log("fighterID:%s" % fighterID)
+            if fighterID == '':
+                browseByFighter(scanLibrary('/media/raid5/mma_sorted'))
+            else:
+                getEventsByFighter(scanLibrary('/media/raid5/mma_sorted'), fighterID)
         elif path == "/allevents/":
             allEvents(scanLibrary('/media/raid5/mma_sorted'))
         elif path.startswith("/getEvent/"):
