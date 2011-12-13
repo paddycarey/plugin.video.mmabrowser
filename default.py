@@ -88,7 +88,10 @@ class getEventDetails:
         self.promotion = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
         self.date = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
         self.venue = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip(',')
-        self.city = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip('\r\n')
+        try:
+            self.city = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip('\r\n')
+        except:
+            self.city = ''
         table = soup.find("table", {"class" : "fight_event_card"})
         rows = table.findAll('tr')
         self.fights = []
