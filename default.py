@@ -389,6 +389,8 @@ if (__name__ == "__main__"):
 
     params=get_params()
 
+    libraryList = scanLibrary(__addon__.getSetting("libraryPath"))
+
     try:
         page = int(urllib.unquote_plus(params["page"]))
     except:
@@ -410,22 +412,22 @@ if (__name__ == "__main__"):
             organisation = path.replace('/browsebyorganisation/','')
             log("organisation:%s" % organisation)
             if organisation == '':
-                browseByOrganisation(scanLibrary('/media/raid5/mma_sorted'))
+                browseByOrganisation(libraryList)
             else:
-                getEventsByOrganisation(scanLibrary('/media/raid5/mma_sorted'), organisation)
+                getEventsByOrganisation(libraryList, organisation)
         elif path.startswith("/browsebyfighter/"):
             log("path:%s" % path)
             fighterID = path.replace('/browsebyfighter/','')
             log("fighterID:%s" % fighterID)
             if fighterID == '':
-                browseByFighter(scanLibrary('/media/raid5/mma_sorted'))
+                browseByFighter(libraryList)
             else:
-                getEventsByFighter(scanLibrary('/media/raid5/mma_sorted'), fighterID)
+                getEventsByFighter(libraryList, fighterID)
         elif path == "/allevents/":
-            allEvents(scanLibrary('/media/raid5/mma_sorted'))
+            allEvents(libraryList)
         elif path.startswith("/getEvent/"):
             eventID = path.replace('/getEvent/','')
-            getEvent(scanLibrary('/media/raid5/mma_sorted'), eventID)
+            getEvent(libraryList, eventID)
         
         #addDir("> Next Page", path, page+1, "")
     
