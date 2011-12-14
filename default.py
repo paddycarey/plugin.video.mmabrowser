@@ -123,28 +123,31 @@ class getEventDetails:
             except:
                 self.city = ''
             table = soup.find("table", {"class" : "fight_event_card"})
-            rows = table.findAll('tr')
             self.fights = []
-            rowcount = 0
-            for row in rows:
-                if not rowcount == 0:
-                    cols = row.findAll('td')
-                    
-                    fight = {}
-                    fight['ID'] = cols[0].string
-                    fight['fighters'] = []
-                    fight['fighters'].append(cols[1].a['href'].rsplit('-', 1)[1])
-                    fight['fighters'].append(cols[3].a['href'].rsplit('-', 1)[1])
-                    if cols[1].findAll(text=True)[1] == 'Winner':
-                        fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
-                    else:
-                        fight['winner'] = None
-                    fight['result'] = cols[4].string
-                    fight['round'] = cols[5].string
-                    fight['time'] = cols[6].string
-                    self.fights.append(fight)
-                    
-                rowcount = rowcount + 1
+            try:
+                rows = table.findAll('tr')
+                rowcount = 0
+                for row in rows:
+                    if not rowcount == 0:
+                        cols = row.findAll('td')
+                        
+                        fight = {}
+                        fight['ID'] = cols[0].string
+                        fight['fighters'] = []
+                        fight['fighters'].append(cols[1].a['href'].rsplit('-', 1)[1])
+                        fight['fighters'].append(cols[3].a['href'].rsplit('-', 1)[1])
+                        if cols[1].findAll(text=True)[1] == 'Winner':
+                            fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
+                        else:
+                            fight['winner'] = None
+                        fight['result'] = cols[4].string
+                        fight['round'] = cols[5].string
+                        fight['time'] = cols[6].string
+                        self.fights.append(fight)
+                        
+                    rowcount = rowcount + 1
+            except:
+                pass
                 
             shelveFile['title'] = self.title
             shelveFile['promotion'] = self.promotion
