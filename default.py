@@ -123,6 +123,7 @@ def downloadFile(url, filePath):
         response.close()
     except:
         xbmcvfs.delete(filePath)
+        log('Unable to download: %s' % url)
     else:
         log("Downloaded: %s" % url)
 
@@ -437,7 +438,7 @@ if (__name__ == "__main__"):
         cur.execute("CREATE TABLE fights(eventID TEXT, fightID TEXT, fighter1 TEXT, fighter2 TEXT, winner TEXT, result TEXT, round TEXT, time TEXT)")
         cur.execute("DROP TABLE IF EXISTS fighters")
         cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
-        __addon__.setSetting(id="forceFullRescan", value='true')
+        __addon__.setSetting(id="forceFullRescan", value='false')
     ## for every new event in library retrieve details from sherdog.com
     cur.execute("SELECT ID FROM events")
     for libraryItem in libraryList:
