@@ -62,17 +62,34 @@ def getHtml(url):
         log('Retrieved URL: %s' % url)
         return data
 
-def scanLibrary(path):
-    library = []
-    idFile = 'sherdogEventID'
-    for x in os.walk(path):
-        pathIdFile = os.path.join(x[0], idFile)
-        if xbmcvfs.exists(pathIdFile):
+def scanLibrary(scriptPath, libraryPath):
+
+    if scriptPath == '/':
+        ## scan libraryPath for directories containing sherdogEventID files
+        log('Scanning library for event IDs/paths')
+        cur.execute("DROP TABLE IF EXISTS library")
+        cur.execute("CREATE TABLE library(ID TEXT, path TEXT)")
+        library = []
+        idFile = 'sherdogEventID'
+        for x in os.walk(libraryPath):
+            pathIdFile = os.path.join(x[0], idFile)
+            if xbmcvfs.exists(pathIdFile):
+                event = {}
+                event['ID'] = open(pathIdFile).read()
+                event['ID'] = event['ID'].replace('\n', '')
+                event['path'] = x[0]
+                log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
+                library.append(event)
+                cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+        storageDB.commit()
+    else:
+        ## loading library from storage
+        cur.execute("SELECT * FROM library")
+        library = []
+        for x in cur.fetchall():
             event = {}
-            event['ID'] = open(pathIdFile).read()
-            event['ID'] = event['ID'].replace('\n', '')
-            event['path'] = x[0]
-            log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
+            event['ID'] = x[0]
+            event['path'] = x[1]
             library.append(event)
     return library
 
@@ -148,7 +165,7 @@ def getEventDetails(sherdogEventID):
     event['date'] = "%s-%s-%s" % (tempYear, tempMonth, tempDay)
     log('Date: %s' % event['date'])
     try:
-        event['venue'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0]
+        event['venue'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip().rstrip(',')
         log('Venue: %s' % event['venue'])
     except:
         event['venue'] = ''
@@ -296,11 +313,14 @@ def addDir(name,path,page,iconimage):
     li.setInfo( type="Video", infoLabels={ "Title": name })
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
-def allEvents(libraryList):
-    for x in sorted(libraryList, key=lambda k: k['path']):
-        card = getEventDetails(x['ID'])
-        thumbPath = os.path.join(x['path'], 'folder.jpg')
-        addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+def allEvents():
+    
+    cur.execute("SELECT DISTINCT ID, title, date FROM events ORDER BY date")
+    for event in cur.fetchall():
+        for x in libraryList:
+            if event[0] == x['ID']:
+                thumbPath = os.path.join(x['path'], 'folder.jpg')
+                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath)
 
 def getUniq(seq): 
     seen = []
@@ -321,51 +341,53 @@ def browseByOrganisation():
 
 def getEventsByOrganisation(organisation):
 
-    cur.execute("SELECT eventID, title FROM events WHERE organisation='%s' ORDER BY date" % organisation)
+    cur.execute("SELECT ID, title, date FROM events WHERE promotion='%s' ORDER BY date" % organisation)
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
                 thumbPath = os.path.join(x['path'], 'folder.jpg')
-                addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath)
 
-def browseByFighter(libraryList):
-    fighterList = []
-    processedFighterList = []
-    for x in sorted(libraryList, key=lambda k: k['path']):
-        card = getEventDetails(x['ID'])
-        for fight in card.fights:
-            fighterList.append(fight['fighters'][0])
-            fighterList.append(fight['fighters'][1])
-    for fighterID in getUniq(fighterList):
-        fighter = getFighterDetails(fighterID)
-        fighterThumb = fighterID + '.jpg'
+def browseByFighter():
+
+    cur.execute("SELECT DISTINCT fighterID, name FROM fighters ORDER BY name")
+    for fighter in cur.fetchall():
+        fighterThumb = fighter[0] + '.jpg'
         thumbPath = os.path.join(__fighterDir__, fighterThumb)
-        processedFighterList.append([fighter.name, fighter.ID, thumbPath])
-    for fighterName, fighterID, thumbPath in sorted(processedFighterList):
-            addDir(fighterName, "/browsebyfighter/%s" % fighterID, 1, thumbPath)
+        addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
 
-def getEventsByFighter(libraryList, fighterID):
-    eventList = []
-    for x in sorted(libraryList, key=lambda k: k['path']):
-        card = getEventDetails(x['ID'])
-        for fight in card.fights:
-            if fighterID in fight['fighters']:
-                thumbPath = os.path.join(x['path'], 'folder.jpg')
-                addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+def getEventsByFighter(fighterID):
+
+    cur.execute("SELECT DISTINCT eventID FROM fights WHERE (fighter1='%s' OR fighter2='%s') ORDER BY eventID" % (fighterID, fighterID))
+    events = []
+    for eventID in cur.fetchall():
+        eventDict = {}
+        cur.execute("SELECT ID, title, date FROM events WHERE ID='%s'" % eventID)
+        event = cur.fetchone()
+        for x in libraryList:
+            if x['ID'] == event[0]:
+                eventDict['thumbPath'] = os.path.join(x['path'], 'folder.jpg')
                 break
+        eventDict['ID'] = event[0]
+        eventDict['title'] = event[1]
+        eventDict['date'] = event[2]
+        events.append(eventDict)
+    for event in sorted(events, key=lambda k: k['date']):
+        addDir("%s: %s" % (event['date'], event['title']), "/getEvent/%s" % event['ID'], 1, event['thumbPath'])
 
-def getEvent(libraryList, eventID):
-    fileList = []
-    for x in sorted(libraryList, key=lambda k: k['path']):
-        if x['ID'] == eventID:
+def getEvent(eventID):
+    
+    cur.execute("SELECT * FROM events WHERE ID='%s'" % eventID)
+    event = cur.fetchone()
+    for x in libraryList:
+        if event[0] == x['ID']:
             thumbPath = os.path.join(x['path'], 'folder.jpg')
-            card = getEventDetails(x['ID'])
             for root, dirs, files in os.walk(x['path']):
                 for vidFile in files:
                     vidFileExt = os.path.splitext(vidFile)[1]
                     vidFilePath = os.path.join(root, vidFile)
                     if vidFileExt in ['.mkv', '.mp4', '.flv', '.avi']:
-                        addLink(vidFile, '%s: %s, %s' % (card.date, card.venue, card.city), vidFilePath, thumbPath)
+                        addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath)
                     else:
                         log('File ignored: %s' % vidFilePath)
 
@@ -395,56 +417,45 @@ if (__name__ == "__main__"):
     storageDB = sqlite3.connect(storageDBPath)
     cur = storageDB.cursor()
 
-    ## scan libraryPath for directories containing sherdogEventID files
-    log('Scanning library for event IDs/paths')
-    libraryList = scanLibrary(__addon__.getSetting("libraryPath"))
+    ## retrieve current list of events in libraryPath
+    libraryList = scanLibrary(path, __addon__.getSetting("libraryPath"))
 
     try:
-        ##attempt to load eventList from storage
+        ##attempt to load tables from storage
         cur.execute("SELECT * from events")
+        cur.execute("SELECT * from fights")
+        cur.execute("SELECT * from fighters")
     except sqlite3.Error, e:
+        __addon__.setSetting(id="forceFullRescan", value='true')
         log('SQLite Error: %s' % e.args[0])
         log('Unable to load event list from storage: rescanning')
         log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
+    if (__addon__.getSetting("forceFullRescan") == 'true'):
         cur.execute("DROP TABLE IF EXISTS events")
         cur.execute("CREATE TABLE events(ID TEXT, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT)")
         cur.execute("DROP TABLE IF EXISTS fights")
         cur.execute("CREATE TABLE fights(eventID TEXT, fightID TEXT, fighter1 TEXT, fighter2 TEXT, winner TEXT, result TEXT, round TEXT, time TEXT)")
-        #cur.execute("DROP TABLE IF EXISTS fighters")
-        #cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
-        ## for every event in library retrieve details from sherdog.com
-        for libraryItem in libraryList:
-            event = getEventDetails(libraryItem['ID'])
-            cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
-            storageDB.commit()
-            for fight in event['fights']:
-                cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
-                storageDB.commit()
-                cur.execute("SELECT fighterID from fighters")
-                fighters = cur.fetchall()
-                for fighter in [fight['fighter1'], fight['fighter2']]:
-                    if not (fighter,) in fighters:
-                        fighterDetails = getFighterDetails(fighter)
-                        cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
-                        storageDB.commit()
-    else:
-        log('Loaded event list from storage')
-        log('Checking for new events')
-        #storedIDList = []
-        #newEventList = []
-        ### create list containing all event IDs
-        #for event in eventList:
-            #storedIDList.append(event['ID'])
-        ### create list of new events which are in libraryPath but not storage
-        #for libraryItem in libraryList:
-            #if not libraryItem['ID'] in storedIDList:
-                #log('Found new event (%s): %s' % (libraryItem['ID'], libraryItem['path']))
-                #newEventList.append(libraryItem)
-        ### for every new event in library retrieve details from sherdog.com
-        #for libraryItem in newEventList:
-            #eventList.append(getEventDetails(libraryItem['ID']))
-    ## store eventList to storage
-    #storage['eventList'] = eventList
+        cur.execute("DROP TABLE IF EXISTS fighters")
+        cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
+    ## for every new event in library retrieve details from sherdog.com
+    cur.execute("SELECT ID FROM events")
+    for libraryItem in libraryList:
+        if not (libraryItem['ID'],) in cur.fetchall():
+            try:
+                event = getEventDetails(libraryItem['ID'])
+                cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
+                for fight in event['fights']:
+                    cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
+                    cur.execute("SELECT fighterID from fighters")
+                    fighters = cur.fetchall()
+                    for fighter in [fight['fighter1'], fight['fighter2']]:
+                        if not (fighter,) in fighters:
+                            fighterDetails = getFighterDetails(fighter)
+                            cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
+                    storageDB.commit()
+            except:
+                log('Error adding event to database: %s' % libraryItem['ID'])
+                storageDB.rollback()
     
     ## check path and generate desired list
     if path == "/":
@@ -470,17 +481,17 @@ if (__name__ == "__main__"):
             log("fighterID:%s" % fighterID)
             if fighterID == '':
                 ## populate list of fighters
-                browseByFighter(libraryList)
+                browseByFighter()
             else:
                 ## populate list of all events a given fighter has fought in
-                getEventsByFighter(libraryList, fighterID)
+                getEventsByFighter(fighterID)
         elif path == "/allevents/":
             ## populate list of all events
-            allEvents(libraryList)
+            allEvents()
         elif path.startswith("/getEvent/"):
             eventID = path.replace('/getEvent/','')
             ## populate list of all video files for a given event
-            getEvent(libraryList, eventID)
+            getEvent(eventID)
 
         ## add 'Next Page' button to bottom of list
         #addDir("> Next Page", path, page+1, "")
