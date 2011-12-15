@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 
-# Some links used for testing
-# Andre Gusmao http://www.sherdog.com/fightfinder/fightfinder.asp?fighterID=15806
-# UFC 98 http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=9529
-
 import os
-import shelve
 import socket
+import sqlite3
 import sys
 import urllib
 import xbmc
@@ -31,14 +27,10 @@ __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'thumbs')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
-__eventDir__          = os.path.join(__addondir__, 'events')
 
 ### adjust default timeout to stop script hanging
 timeout = 20
 socket.setdefaulttimeout(timeout)
-
-page = 1
-path = "/"
 
 def normalizeString( text ):
     try: text = unicodedata.normalize( 'NFKD', _unicode( text ) ).encode( 'ascii', 'ignore' )
@@ -65,8 +57,9 @@ def getHtml(url):
         data = client.read()
         client.close()
     except:
-        log( 'Error getting data from: %s' % url )
+        log('Error getting data from: %s' % url)
     else:
+        log('Retrieved URL: %s' % url)
         return data
 
 def scanLibrary(path):
@@ -77,9 +70,28 @@ def scanLibrary(path):
         if xbmcvfs.exists(pathIdFile):
             event = {}
             event['ID'] = open(pathIdFile).read()
+            event['ID'] = event['ID'].replace('\n', '')
             event['path'] = x[0]
+            log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
             library.append(event)
     return library
+
+# This function raises a keyboard for user input
+def getUserInput(self, title = "Input", default="", hidden=False):
+    result = None
+
+    # Fix for when this functions is called with default=None
+    if not default:
+        default = ""
+
+    keyboard = self.xbmc.Keyboard(default, title)
+    keyboard.setHiddenInput(hidden)
+    keyboard.doModal()
+
+    if keyboard.isConfirmed():
+        result = keyboard.getText()
+
+    return result
 
 def downloadFile(url, filePath):
 
@@ -95,158 +107,160 @@ def downloadFile(url, filePath):
     except:
         xbmcvfs.delete(filePath)
     else:
-        log("Downloaded: %s" % url, xbmc.LOGNOTICE)
+        log("Downloaded: %s" % url)
 
-class getEventDetails:
+def getEventDetails(sherdogEventID):
     
-    def __init__(self, sherdogEventID):
-        
-        shelveFilePath = os.path.join(__eventDir__, sherdogEventID)
-        shelveFile = shelve.open(shelveFilePath)
-        self.ID = sherdogEventID
-        try:
-            self.title = shelveFile['title']
-            self.promotion = shelveFile['promotion']
-            self.date = shelveFile['date']
-            self.venue = shelveFile['venue']
-            self.city = shelveFile['city']
-            self.fights = shelveFile['fights']
-        except:
-            url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=%s' % sherdogEventID
-            soup = BeautifulSoup(getHtml(url))
-            self.title = soup.find("div", {"class" : "Txt30Blue Bold SpacerLeft8"}).h1.string
-            self.promotion = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
-            self.date = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
-            self.venue = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip(',')
-            try:
-                self.city = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip('\r\n')
-            except:
-                self.city = ''
-            table = soup.find("table", {"class" : "fight_event_card"})
-            self.fights = []
-            try:
-                rows = table.findAll('tr')
-                rowcount = 0
-                for row in rows:
-                    if not rowcount == 0:
-                        cols = row.findAll('td')
-                        
-                        fight = {}
-                        fight['ID'] = cols[0].string
-                        fight['fighters'] = []
-                        fight['fighters'].append(cols[1].a['href'].rsplit('-', 1)[1])
-                        fight['fighters'].append(cols[3].a['href'].rsplit('-', 1)[1])
-                        if cols[1].findAll(text=True)[1] == 'Winner':
-                            fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
-                        else:
-                            fight['winner'] = None
-                        fight['result'] = cols[4].string
-                        fight['round'] = cols[5].string
-                        fight['time'] = cols[6].string
-                        self.fights.append(fight)
-                        
-                    rowcount = rowcount + 1
-            except:
-                pass
+    """
+    This function will retrieve and return all event details from sherdog.com for a given event ID.
+    
+    name: getEventDetails
+    @param sherdogEventID
+    @return event
+    """
+
+    log('########## Getting event details ##########')
+    event = {}
+    event['ID'] = sherdogEventID
+    log('ID: %s' % event['ID'])
+    url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=%s' % sherdogEventID
+    soup = BeautifulSoup(getHtml(url))
+    event['title'] = soup.find("div", {"class" : "Txt30Blue Bold SpacerLeft8"}).h1.string
+    log('Title: %s' % event['title'])
+    event['promotion'] = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
+    log('Promotion: %s' % event['promotion'])
+    tempDate = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
+    tempYear = tempDate.split(' ')[2]
+    tempDay = tempDate.split(' ')[1].rstrip(',')
+    tempMonth = tempDate.split(' ')[0]
+    if tempMonth == 'January': tempMonth = '01'
+    elif tempMonth == 'February': tempMonth = '02'
+    elif tempMonth == 'March': tempMonth = '03'
+    elif tempMonth == 'April': tempMonth = '04'
+    elif tempMonth == 'May': tempMonth = '05'
+    elif tempMonth == 'June': tempMonth = '06'
+    elif tempMonth == 'July': tempMonth = '07'
+    elif tempMonth == 'August': tempMonth = '08'
+    elif tempMonth == 'September': tempMonth = '09'
+    elif tempMonth == 'October': tempMonth = '10'
+    elif tempMonth == 'November': tempMonth = '11'
+    elif tempMonth == 'December': tempMonth = '12'
+    event['date'] = "%s-%s-%s" % (tempYear, tempMonth, tempDay)
+    log('Date: %s' % event['date'])
+    try:
+        event['venue'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0]
+        log('Venue: %s' % event['venue'])
+    except:
+        event['venue'] = ''
+        log('Venue: Not Found')
+    try:
+        event['city'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip().lstrip()
+        log('City: %s' % event['city'])
+    except:
+        event['city'] = ''
+        log('City: Not Found')
+    table = soup.find("table", {"class" : "fight_event_card"})
+    event['fights'] = []
+    try:
+        rows = table.findAll('tr')
+        rowcount = 0
+        for row in rows:
+            if not rowcount == 0:
+                cols = row.findAll('td')
                 
-            shelveFile['title'] = self.title
-            shelveFile['promotion'] = self.promotion
-            shelveFile['date'] = self.date
-            shelveFile['venue'] = self.venue
-            shelveFile['city'] = self.city
-            shelveFile['fights'] = self.fights
-        shelveFile.close()
+                fight = {}
+                fight['ID'] = cols[0].string
+                fight['fighter1'] = cols[1].a['href'].rsplit('-', 1)[1]
+                fight['fighter2'] = cols[3].a['href'].rsplit('-', 1)[1]
+                if cols[1].findAll(text=True)[1] == 'Winner':
+                    fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
+                else:
+                    fight['winner'] = None
+                fight['result'] = cols[4].string
+                fight['round'] = cols[5].string
+                fight['time'] = cols[6].string
+                event['fights'].append(fight)
+                log('Fight %s: %s vs. %s' % (fight['ID'], fight['fighter1'], fight['fighter2']))
+            rowcount = rowcount + 1
+    except:
+        pass
+    log('###### Finished getting event details #####')
+    return event
 
-class getFighterDetails:
+def getFighterDetails(sherdogFighterID):
+
+    """
+    This function will retrieve and return all event details from sherdog.com for a given event ID.
     
-    def __init__(self, sherdogFighterID):
+    name: getEventDetails
+    @param sherdogEventID
+    @return event
+    """
 
-        url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?fighterID=%s' % sherdogFighterID
-        shelveFilePath = os.path.join(__fighterDir__, sherdogFighterID)
-        shelveFile = shelve.open(shelveFilePath)
+    log('######### Getting fighter details #########')
 
-        self.ID = sherdogFighterID
-        self.name = None
-        self.nickName = None
-        self.association = None
-        self.height = None
-        self.weight = None
-        self.birthYear = None
-        self.birthMonth = None
-        self.birthDay = None
-        self.age = None
-        self.city = None
-        self.country = None
+    fighter = {}
+    fighter['ID'] = ''
+    fighter['name'] = ''
+    fighter['nickName'] = ''
+    fighter['association'] = ''
+    fighter['height'] = ''
+    fighter['weight'] = ''
+    fighter['birthYear'] = ''
+    fighter['birthDay'] = ''
+    fighter['birthMonth'] = ''
+    fighter['city'] = ''
+    fighter['country'] = ''
 
-        try:
-            self.name = shelveFile['name']
-            self.nickName = shelveFile['nickName']
-            self.association = shelveFile['association']
-            self.height = shelveFile['height']
-            self.weight = shelveFile['weight']
-            self.birthYear = shelveFile['birthYear']
-            self.birthMonth = shelveFile['birthMonth']
-            self.birthDay = shelveFile['birthDay']
-            self.age = shelveFile['age']
-            self.city = shelveFile['city']
-            self.country = shelveFile['country']
-            fighterThumb = self.ID + '.jpg'
-            thumbPath = os.path.join(__fighterDir__, fighterThumb)
-            if not xbmcvfs.exists(thumbPath):
-                soup = BeautifulSoup(getHtml(url))
-                thumbUrl = soup.find("span", {"id" : "fighter_picture"}).img['src']
-                if not thumbUrl == 'http://www.cdn.sherdog.com/fightfinder/Pictures/blank_fighter.jpg':
-                    downloadFile(thumbUrl, thumbPath)
-        except:
-            soup = BeautifulSoup(getHtml(url))
+    url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?fighterID=%s' % sherdogFighterID
+
+    fighter['ID'] = sherdogFighterID
+    log('ID: %s' % fighter['ID'])
+
+    soup = BeautifulSoup(getHtml(url))
+
+    table = soup.find("span", {"id" : "fighter_profile"})
+    rows = table.findAll('tr')
+    for row in rows:
+        infoItem = row.findAll('td')
+        if infoItem[0].string == None:
+            continue
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Name':
+            fighter['name'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+            log('Name: %s' % fighter['name'])
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Nick Name':
+            fighter['nickName'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+            log('Nickname: %s' % fighter['nickName'])
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Association':
+            fighter['association'] = infoItem[1].a.string.rstrip(' ').rstrip('\n')
+            log('Association: %s' % fighter['association'])
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Height':
+            fighter['height'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+            log('Height: %s' % fighter['height'])
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Weight':
+            fighter['weight'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+            log('Weight: %s' % fighter['weight'])
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Birth Date':
+            fighter['birthYear'] = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[0]
+            fighter['birthMonth'] = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[1]
+            fighter['birthDay'] = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[2]
+            log('DOB: %s-%s-%s' % (fighter['birthDay'], fighter['birthMonth'], fighter['birthYear']))
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'City':
+            fighter['city'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+            log('City: %s' % fighter['city'])
+        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Country':
+            fighter['country'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+            log('Country: %s' % fighter['country'])
     
-            table = soup.find("span", {"id" : "fighter_profile"})
-            rows = table.findAll('tr')
-            for row in rows:
-                infoItem = row.findAll('td')
-                if infoItem[0].string == None:
-                    continue
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Name':
-                    self.name = infoItem[1].string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Nick Name':
-                    self.nickName = infoItem[1].string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Association':
-                    self.association = infoItem[1].a.string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Height':
-                    self.height = infoItem[1].string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Weight':
-                    self.weight = infoItem[1].string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Birth Date':
-                    self.birthYear = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[0]
-                    self.birthMonth = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[1]
-                    self.birthDay = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[2]
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Age':
-                    self.age = infoItem[1].string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'City':
-                    self.city = infoItem[1].string.rstrip(' ').rstrip('\n')
-                if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Country':
-                    self.country = infoItem[1].string.rstrip(' ').rstrip('\n')
-            
-            shelveFile['name'] = self.name
-            shelveFile['nickName'] = self.nickName
-            shelveFile['association'] = self.association
-            shelveFile['height'] = self.height
-            shelveFile['weight'] = self.weight
-            shelveFile['birthYear'] = self.birthYear
-            shelveFile['birthMonth'] = self.birthMonth
-            shelveFile['birthDay'] = self.birthDay
-            shelveFile['age'] = self.age
-            shelveFile['city'] = self.city
-            shelveFile['country'] = self.country
-        
-            fighterThumb = self.ID + '.jpg'
-            thumbPath = os.path.join(__fighterDir__, fighterThumb)
-            if not xbmcvfs.exists(thumbPath):
-                thumbUrl = soup.find("span", {"id" : "fighter_picture"}).img['src']
-                if not thumbUrl == 'http://www.cdn.sherdog.com/fightfinder/Pictures/blank_fighter.jpg':
-                    downloadFile(thumbUrl, thumbPath)
-                    
-        shelveFile.close()
+    fighterThumb = fighter['ID'] + '.jpg'
+    thumbPath = os.path.join(__fighterDir__, fighterThumb)
+    if not xbmcvfs.exists(thumbPath):
+        thumbUrl = soup.find("span", {"id" : "fighter_picture"}).img['src']
+        if not thumbUrl == 'http://www.cdn.sherdog.com/fightfinder/Pictures/blank_fighter.jpg':
+            downloadFile(thumbUrl, thumbPath)
+    
+    log('##### Finished getting fighter details ####')
+    return fighter
 
 def get_params():
         param=[]
@@ -282,35 +296,6 @@ def addDir(name,path,page,iconimage):
     li.setInfo( type="Video", infoLabels={ "Title": name })
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
-def doTestRun():
-    # Simple test run
-    
-    library = [{ 'ID' : '9529', 'path' : '/media/raid5/mma_sorted/[2009-05-23] UFC 98: Evans vs. Machida'},{ 'ID' : '17789', 'path' : '/media/raid5/mma_sorted/[2009-05-23] UFC Live: Cruz vs. Johnson'},{ 'ID' : '16309', 'path' : '/media/raid5/mma_sorted/[2011-06-26] UFC Live: Kongo vs. Barry'},{ 'ID' : '8732', 'path' : '/media/raid5/mma_sorted/[2008-12-27] UFC 92: The Ultimate 2008'}]
-    
-    card = getEventDetails('9529')
-    
-    log( '##### Event Details #####' )
-    log( 'Name:      %s' % card.title )
-    log( 'Promotion: %s' % card.promotion )
-    log( 'Date:      %s' % card.date )
-    log( 'Venue:     %s' % card.venue )
-    log( 'City:      %s' % card.city )
-    for fight in card.fights:
-        for fighter in fight['fighters']:
-            details = getFighterDetails(fighter)
-            log()
-            log( '##### Fighter Details #####' )
-            log( 'Name:          %s' % details.name )
-            log( 'Nickname:      %s' % details.nickName )
-            log( 'Camp:          %s' % details.association )
-            log( 'Height:        %s' % details.height )
-            log( 'Weight:        %s' % details.weight )
-            log( 'Date of birth: %s-%s-%s' % (details.birthYear, details.birthMonth, details.birthDay) )
-            log( 'Age:           %s' % details.age )
-            log( 'City:          %s' % details.city )
-            log( 'Country:       %s' % details.country )
-            getAvailableFights(details.ID, library)
-
 def allEvents(libraryList):
     for x in sorted(libraryList, key=lambda k: k['path']):
         card = getEventDetails(x['ID'])
@@ -326,23 +311,22 @@ def getUniq(seq):
         result.append(item)
     return result
 
-def browseByOrganisation(libraryList):
-    promotionList = []
-    for x in sorted(libraryList, key=lambda k: k['path']):
-        card = getEventDetails(x['ID'])
-        if not card.promotion in promotionList:
-            promotionList.append(card.promotion)
-            promotionThumb = card.promotion + '.jpg'
-            thumbPath = os.path.join(__promotionDir__, promotionThumb)
-            addDir(card.promotion, "/browsebyorganisation/%s" % card.promotion, 1, thumbPath)
+def browseByOrganisation():
 
-def getEventsByOrganisation(libraryList, organisation):
-    eventList = []
-    for x in sorted(libraryList, key=lambda k: k['path']):
-        card = getEventDetails(x['ID'])
-        if card.promotion == organisation:
-            thumbPath = os.path.join(x['path'], 'folder.jpg')
-            addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
+    cur.execute("SELECT DISTINCT promotion FROM events ORDER BY promotion")
+    for promotion in cur.fetchall():
+        promotionThumb = promotion[0] + '.jpg'
+        thumbPath = os.path.join(__promotionDir__, promotionThumb)
+        addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath)
+
+def getEventsByOrganisation(organisation):
+
+    cur.execute("SELECT eventID, title FROM events WHERE organisation='%s' ORDER BY date" % organisation)
+    for event in cur.fetchall():
+        for x in libraryList:
+            if event[0] == x['ID']:
+                thumbPath = os.path.join(x['path'], 'folder.jpg')
+                addDir(card.title, "/getEvent/%s" % card.ID, 1, thumbPath)
 
 def browseByFighter(libraryList):
     fighterList = []
@@ -387,24 +371,84 @@ def getEvent(libraryList, eventID):
 
 if (__name__ == "__main__"):
 
-    for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __promotionDir__, __eventDir__]:
-        xbmcvfs.mkdir(neededDir)
+    ## parse plugin arguments
+    params = get_params()
 
-    params=get_params()
-
-    libraryList = scanLibrary(__addon__.getSetting("libraryPath"))
-
+    ## get page number
     try:
         page = int(urllib.unquote_plus(params["page"]))
     except:
-        pass
-    
+        page = 1
+
+    ## get path
     try:
         path = urllib.unquote_plus(params["path"])
     except:
-        pass
+        path = "/"
+
+    ## create directories needed for script operation
+    for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __promotionDir__]:
+        xbmcvfs.mkdir(neededDir)
+
+    ## initialise persistent storage
+    storageDBPath = os.path.join(__addondir__, 'storage.db')
+    storageDB = sqlite3.connect(storageDBPath)
+    cur = storageDB.cursor()
+
+    ## scan libraryPath for directories containing sherdogEventID files
+    log('Scanning library for event IDs/paths')
+    libraryList = scanLibrary(__addon__.getSetting("libraryPath"))
+
+    try:
+        ##attempt to load eventList from storage
+        cur.execute("SELECT * from events")
+    except sqlite3.Error, e:
+        log('SQLite Error: %s' % e.args[0])
+        log('Unable to load event list from storage: rescanning')
+        log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
+        cur.execute("DROP TABLE IF EXISTS events")
+        cur.execute("CREATE TABLE events(ID TEXT, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT)")
+        cur.execute("DROP TABLE IF EXISTS fights")
+        cur.execute("CREATE TABLE fights(eventID TEXT, fightID TEXT, fighter1 TEXT, fighter2 TEXT, winner TEXT, result TEXT, round TEXT, time TEXT)")
+        #cur.execute("DROP TABLE IF EXISTS fighters")
+        #cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
+        ## for every event in library retrieve details from sherdog.com
+        for libraryItem in libraryList:
+            event = getEventDetails(libraryItem['ID'])
+            cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
+            storageDB.commit()
+            for fight in event['fights']:
+                cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
+                storageDB.commit()
+                cur.execute("SELECT fighterID from fighters")
+                fighters = cur.fetchall()
+                for fighter in [fight['fighter1'], fight['fighter2']]:
+                    if not (fighter,) in fighters:
+                        fighterDetails = getFighterDetails(fighter)
+                        cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
+                        storageDB.commit()
+    else:
+        log('Loaded event list from storage')
+        log('Checking for new events')
+        #storedIDList = []
+        #newEventList = []
+        ### create list containing all event IDs
+        #for event in eventList:
+            #storedIDList.append(event['ID'])
+        ### create list of new events which are in libraryPath but not storage
+        #for libraryItem in libraryList:
+            #if not libraryItem['ID'] in storedIDList:
+                #log('Found new event (%s): %s' % (libraryItem['ID'], libraryItem['path']))
+                #newEventList.append(libraryItem)
+        ### for every new event in library retrieve details from sherdog.com
+        #for libraryItem in newEventList:
+            #eventList.append(getEventDetails(libraryItem['ID']))
+    ## store eventList to storage
+    #storage['eventList'] = eventList
     
+    ## check path and generate desired list
     if path == "/":
+        ## populate main menu
         addDir("Browse by: Organisation", "/browsebyorganisation/", 1, "")
         addDir("Browse by: Fighter", "/browsebyfighter/", 1, "")
         addDir("All Events", "/allevents/", 1, "")
@@ -415,23 +459,33 @@ if (__name__ == "__main__"):
             organisation = path.replace('/browsebyorganisation/','')
             log("organisation:%s" % organisation)
             if organisation == '':
-                browseByOrganisation(libraryList)
+                ## populate list of organisations
+                browseByOrganisation()
             else:
-                getEventsByOrganisation(libraryList, organisation)
+                ## populate list of events for a given organisation
+                getEventsByOrganisation(organisation)
         elif path.startswith("/browsebyfighter/"):
             log("path:%s" % path)
             fighterID = path.replace('/browsebyfighter/','')
             log("fighterID:%s" % fighterID)
             if fighterID == '':
+                ## populate list of fighters
                 browseByFighter(libraryList)
             else:
+                ## populate list of all events a given fighter has fought in
                 getEventsByFighter(libraryList, fighterID)
         elif path == "/allevents/":
+            ## populate list of all events
             allEvents(libraryList)
         elif path.startswith("/getEvent/"):
             eventID = path.replace('/getEvent/','')
+            ## populate list of all video files for a given event
             getEvent(libraryList, eventID)
-        
+
+        ## add 'Next Page' button to bottom of list
         #addDir("> Next Page", path, page+1, "")
-    
+
+    ## finish adding items to list and display
     xbmcplugin.endOfDirectory(__addonidint__)
+    ## close persistent storage file
+    storageDB.close()
