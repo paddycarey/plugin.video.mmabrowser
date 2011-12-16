@@ -359,7 +359,7 @@ def browseByOrganisation():
         promotionThumb = promotion[0] + '-poster.jpg'
         promotionFanart = promotion[0] + '-fanart.jpg'
         thumbPath = os.path.join(__promotionDir__, promotionThumb)
-        fanartPath = os.path.join(__promotionDir__, promotionfanart)
+        fanartPath = os.path.join(__promotionDir__, promotionFanart)
         addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
 
 def getEventsByOrganisation(organisation):
