@@ -27,7 +27,7 @@ __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'thumbs')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
-__artBaseURL__        = "http://dl.dropbox.com/u/266793/mmaartwork/events/"
+__artBaseURL__        = "http://dl.dropbox.com/u/266793/mmaartwork/"
 
 ### adjust default timeout to stop script hanging
 timeout = 20
@@ -207,14 +207,26 @@ def getEventDetails(sherdogEventID):
     eventThumb = event['ID'] + '-poster.jpg'
     eventThumbPath = os.path.join(__thumbDir__, eventThumb)
     if not xbmcvfs.exists(eventThumbPath):
-        thumbUrl = __artBaseURL__ + eventThumb
+        thumbUrl = __artBaseURL__ + 'events/' + eventThumb
         downloadFile(thumbUrl, eventThumbPath)
 
     eventFanart = event['ID'] + '-fanart.jpg'
     eventFanartPath = os.path.join(__thumbDir__, eventFanart)
     if not xbmcvfs.exists(eventFanartPath):
-        fanartUrl = __artBaseURL__ + eventFanart
+        fanartUrl = __artBaseURL__ + 'events/' + eventFanart
         downloadFile(fanartUrl, eventFanartPath)
+
+    promotionThumb = event['promotion'] + '-poster.jpg'
+    promotionThumbPath = os.path.join(__promotionDir__, promotionThumb)
+    if not xbmcvfs.exists(promotionThumbPath):
+        fanartUrl = __artBaseURL__ + 'promotions/' + promotionThumb
+        downloadFile(fanartUrl, promotionThumbPath)
+
+    promotionFanart = event['promotion'] + '-fanart.jpg'
+    promotionFanartPath = os.path.join(__promotionDir__, promotionFanart)
+    if not xbmcvfs.exists(promotionFanartPath):
+        fanartUrl = __artBaseURL__ + 'promotions/' + promotionFanart
+        downloadFile(fanartUrl, promotionFanartPath)
 
     log('###### Finished getting event details #####')
     return event
