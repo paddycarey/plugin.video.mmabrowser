@@ -441,11 +441,9 @@ if (__name__ == "__main__"):
         __addon__.setSetting(id="forceFullRescan", value='false')
     ## for every new event in library retrieve details from sherdog.com
     for libraryItem in libraryList:
-        log(libraryItem['ID'])
         scannedID = unicode(libraryItem['ID'])
         cur.execute("SELECT DISTINCT eventID FROM events")
         storedIDs = cur.fetchall()
-        log(storedIDs)
         if not (scannedID,) in storedIDs:
             try:
                 event = getEventDetails(libraryItem['ID'])
