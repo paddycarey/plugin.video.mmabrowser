@@ -316,7 +316,7 @@ def addDir(name,path,page,iconimage):
 
 def allEvents():
     
-    cur.execute("SELECT DISTINCT ID, title, date FROM events ORDER BY date")
+    cur.execute("SELECT DISTINCT eventID, title, date FROM events ORDER BY date")
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
@@ -342,7 +342,7 @@ def browseByOrganisation():
 
 def getEventsByOrganisation(organisation):
 
-    cur.execute("SELECT ID, title, date FROM events WHERE promotion='%s' ORDER BY date" % organisation)
+    cur.execute("SELECT eventID, title, date FROM events WHERE promotion='%s' ORDER BY date" % organisation)
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
@@ -359,11 +359,11 @@ def browseByFighter():
 
 def getEventsByFighter(fighterID):
 
-    cur.execute("SELECT DISTINCT eventID FROM fights WHERE (fighter1='%s' OR fighter2='%s') ORDER BY eventID" % (fighterID, fighterID))
+    cur.execute("SELECT DISTINCT eventID FROM fights WHERE (fighter1='%s' OR fighter2='%s')" % (fighterID, fighterID))
     events = []
     for eventID in cur.fetchall():
         eventDict = {}
-        cur.execute("SELECT ID, title, date FROM events WHERE ID='%s'" % eventID)
+        cur.execute("SELECT eventID, title, date FROM events WHERE ID='%s'" % eventID)
         event = cur.fetchone()
         for x in libraryList:
             if x['ID'] == event[0]:
@@ -378,7 +378,7 @@ def getEventsByFighter(fighterID):
 
 def getEvent(eventID):
     
-    cur.execute("SELECT * FROM events WHERE ID='%s'" % eventID)
+    cur.execute("SELECT * FROM events WHERE eventID='%s'" % eventID)
     event = cur.fetchone()
     for x in libraryList:
         if event[0] == x['ID']:
@@ -431,18 +431,22 @@ if (__name__ == "__main__"):
         log('SQLite Error: %s' % e.args[0])
         log('Unable to load event list from storage: rescanning')
         log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
-    if (__addon__.getSetting("forceFullRescan") == 'true'):
+    if __addon__.getSetting("forceFullRescan") == 'true':
         cur.execute("DROP TABLE IF EXISTS events")
-        cur.execute("CREATE TABLE events(ID TEXT, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT)")
+        cur.execute("CREATE TABLE events(eventID TEXT, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT)")
         cur.execute("DROP TABLE IF EXISTS fights")
         cur.execute("CREATE TABLE fights(eventID TEXT, fightID TEXT, fighter1 TEXT, fighter2 TEXT, winner TEXT, result TEXT, round TEXT, time TEXT)")
         cur.execute("DROP TABLE IF EXISTS fighters")
         cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
         __addon__.setSetting(id="forceFullRescan", value='false')
     ## for every new event in library retrieve details from sherdog.com
-    cur.execute("SELECT ID FROM events")
     for libraryItem in libraryList:
-        if not (libraryItem['ID'],) in cur.fetchall():
+        log(libraryItem['ID'])
+        scannedID = unicode(libraryItem['ID'])
+        cur.execute("SELECT DISTINCT eventID FROM events")
+        storedIDs = cur.fetchall()
+        log(storedIDs)
+        if not (scannedID,) in storedIDs:
             try:
                 event = getEventDetails(libraryItem['ID'])
                 cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
@@ -459,8 +463,8 @@ if (__name__ == "__main__"):
                 log('Error adding event to database: %s' % libraryItem['ID'])
                 log('Rolling back database to clean state')
                 storageDB.rollback()
-                break
-    
+                sys.exit(1)
+
     ## check path and generate desired list
     if path == "/":
         ## populate main menu
