@@ -504,9 +504,9 @@ if (__name__ == "__main__"):
     ## check path and generate desired list
     if path == "/":
         ## populate main menu
-        addDir("Browse by: Organisation", "/browsebyorganisation/", 1, "")
-        addDir("Browse by: Fighter", "/browsebyfighter/", 1, "")
-        addDir("All Events", "/allevents/", 1, "")
+        addDir("Browse by: Organisation", "/browsebyorganisation/", 1, "", "")
+        addDir("Browse by: Fighter", "/browsebyfighter/", 1, "", "")
+        addDir("All Events", "/allevents/", 1, "", "")
     
     else:
         if path.startswith("/browsebyorganisation/"):
