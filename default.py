@@ -27,6 +27,7 @@ __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'thumbs')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
+__artBaseURL__        = "http://dl.dropbox.com/u/266793/mmaartwork/events/"
 
 ### adjust default timeout to stop script hanging
 timeout = 20
@@ -202,6 +203,19 @@ def getEventDetails(sherdogEventID):
             rowcount = rowcount + 1
     except:
         pass
+
+    eventThumb = event['ID'] + '-poster.jpg'
+    eventThumbPath = os.path.join(__thumbDir__, eventThumb)
+    if not xbmcvfs.exists(eventThumbPath):
+        thumbUrl = __artBaseURL__ + eventThumb
+        downloadFile(thumbUrl, eventThumbPath)
+
+    eventFanart = event['ID'] + '-fanart.jpg'
+    eventFanartPath = os.path.join(__thumbDir__, eventFanart)
+    if not xbmcvfs.exists(eventFanartPath):
+        fanartUrl = __artBaseURL__ + eventFanart
+        downloadFile(fanartUrl, eventFanartPath)
+
     log('###### Finished getting event details #####')
     return event
 
@@ -298,20 +312,23 @@ def get_params():
                                 
         return param
 
-def addLink(name,descr, url,iconimage):
+def addLink(name,descr,url,iconimage,fanart):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
     li.setProperty("IsPlayable", "true")
-    li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr} )
+    li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr.replace('\n','')} )
+    li.setProperty( "Fanart_Image", fanart )
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
-def addDir(name,path,page,iconimage):
+def addDir(name,path,page,iconimage,fanart):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))
     li=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=iconimage)
     li.setInfo( type="Video", infoLabels={ "Title": name })
+    #li.setInfo( type="Video", infoLabels={ "Title": name, "Plot": description, "Genre": genre, "Date": date } )
+    li.setProperty( "Fanart_Image", fanart )
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
 def allEvents():
@@ -320,8 +337,9 @@ def allEvents():
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                thumbPath = os.path.join(x['path'], 'folder.jpg')
-                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath)
+                thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
+                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath)
 
 def getUniq(seq): 
     seen = []
@@ -338,7 +356,8 @@ def browseByOrganisation():
     for promotion in cur.fetchall():
         promotionThumb = promotion[0] + '.jpg'
         thumbPath = os.path.join(__promotionDir__, promotionThumb)
-        addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath)
+        fanartPath = ''
+        addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
 
 def getEventsByOrganisation(organisation):
 
@@ -346,8 +365,9 @@ def getEventsByOrganisation(organisation):
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                thumbPath = os.path.join(x['path'], 'folder.jpg')
-                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath)
+                thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
+                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath, fanartPath)
 
 def browseByFighter():
 
@@ -355,7 +375,8 @@ def browseByFighter():
     for fighter in cur.fetchall():
         fighterThumb = fighter[0] + '.jpg'
         thumbPath = os.path.join(__fighterDir__, fighterThumb)
-        addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
+        fanartPath = ''
+        addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath, fanartPath)
 
 def getEventsByFighter(fighterID):
 
@@ -367,14 +388,15 @@ def getEventsByFighter(fighterID):
         event = cur.fetchone()
         for x in libraryList:
             if x['ID'] == event[0]:
-                eventDict['thumbPath'] = os.path.join(x['path'], 'folder.jpg')
+                eventDict['thumbPath'] = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                eventDict['fanartPath'] = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
                 break
         eventDict['ID'] = event[0]
         eventDict['title'] = event[1]
         eventDict['date'] = event[2]
         events.append(eventDict)
     for event in sorted(events, key=lambda k: k['date']):
-        addDir("%s: %s" % (event['date'], event['title']), "/getEvent/%s" % event['ID'], 1, event['thumbPath'])
+        addDir("%s: %s" % (event['date'], event['title']), "/getEvent/%s" % event['ID'], 1, event['thumbPath'], eventDict['fanartPath'])
 
 def getEvent(eventID):
     
@@ -382,13 +404,14 @@ def getEvent(eventID):
     event = cur.fetchone()
     for x in libraryList:
         if event[0] == x['ID']:
-            thumbPath = os.path.join(x['path'], 'folder.jpg')
+            thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+            fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
             for root, dirs, files in os.walk(x['path']):
                 for vidFile in files:
                     vidFileExt = os.path.splitext(vidFile)[1]
                     vidFilePath = os.path.join(root, vidFile)
                     if vidFileExt in ['.mkv', '.mp4', '.flv', '.avi']:
-                        addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath)
+                        addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath, fanartPath)
                     else:
                         log('File ignored: %s' % vidFilePath)
 
