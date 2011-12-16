@@ -318,7 +318,8 @@ def addLink(name,descr,url,iconimage,fanart):
     li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
     li.setProperty("IsPlayable", "true")
     li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr.replace('\n','')} )
-    li.setProperty( "Fanart_Image", fanart )
+    if xbmcvfs.exists(fanart):
+        li.setProperty( "Fanart_Image", fanart )
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
 def addDir(name,path,page,iconimage,fanart):
@@ -328,7 +329,8 @@ def addDir(name,path,page,iconimage,fanart):
     li=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=iconimage)
     li.setInfo( type="Video", infoLabels={ "Title": name })
     #li.setInfo( type="Video", infoLabels={ "Title": name, "Plot": description, "Genre": genre, "Date": date } )
-    li.setProperty( "Fanart_Image", fanart )
+    if xbmcvfs.exists(fanart):
+        li.setProperty( "Fanart_Image", fanart )
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
 def allEvents():
@@ -354,9 +356,10 @@ def browseByOrganisation():
 
     cur.execute("SELECT DISTINCT promotion FROM events ORDER BY promotion")
     for promotion in cur.fetchall():
-        promotionThumb = promotion[0] + '.jpg'
+        promotionThumb = promotion[0] + '-poster.jpg'
+        promotionFanart = promotion[0] + '-fanart.jpg'
         thumbPath = os.path.join(__promotionDir__, promotionThumb)
-        fanartPath = ''
+        fanartPath = os.path.join(__promotionDir__, promotionfanart)
         addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
 
 def getEventsByOrganisation(organisation):
