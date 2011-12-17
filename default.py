@@ -399,7 +399,7 @@ def getEventsByFighter(fighterID):
     events = []
     for eventID in cur.fetchall():
         eventDict = {}
-        cur.execute("SELECT eventID, title, date FROM events WHERE ID='%s'" % eventID)
+        cur.execute("SELECT eventID, title, date FROM events WHERE eventID='%s'" % eventID)
         event = cur.fetchone()
         for x in libraryList:
             if x['ID'] == event[0]:
