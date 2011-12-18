@@ -13,10 +13,11 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">Downloads fight stats from Sherdog.net for use in XBMC</summary>
+    <summary lang="en">Downloads stats from Sherdog.com for use in XBMC</summary>
     <description lang="en">
-        Downloads fight stats from Sherdog.net for use in XBMC
+        Downloads stats from Sherdog.com for use in XBMC and allows to filter/search your MMA events by a variety of criteria.
 	</description>
+    <disclaimer>All stats are taken from sherdog.com</disclaimer>
     <platform>all</platform>
   </extension>
 </addon>
