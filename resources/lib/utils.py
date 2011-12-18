@@ -60,7 +60,7 @@ def getUniq(seq):
         result.append(item)
     return result
 
-def addLink(name, descr, url, iconimage, fanart, fallbackFanart=''):
+def addLink(name, descr, url, iconimage, fanart='', fallbackFanart=''):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
@@ -74,7 +74,7 @@ def addLink(name, descr, url, iconimage, fanart, fallbackFanart=''):
         li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
-def addDir(name, path, page, iconimage, fanart, fallbackFanart=''):
+def addDir(name, path, page, iconimage, fanart='', fallbackFanart=''):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))

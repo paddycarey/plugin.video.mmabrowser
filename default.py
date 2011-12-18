@@ -61,12 +61,13 @@ def scanLibrary(scriptPath, libraryPath):
 
 def allEvents():
     
-    cur.execute("SELECT DISTINCT eventID, title, date FROM events ORDER BY date")
+    cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events ORDER BY date")
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
+                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
                 addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath)
 
 def browseByOrganisation():
@@ -96,8 +97,7 @@ def browseByFighter():
     for fighter in cur.fetchall():
         fighterThumb = fighter[0] + '.jpg'
         thumbPath = os.path.join(__fighterDir__, fighterThumb)
-        fanartPath = ''
-        addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath, fanartPath)
+        addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
 
 def getEventsByFighter(fighterID):
 
@@ -105,12 +105,13 @@ def getEventsByFighter(fighterID):
     events = []
     for eventID in cur.fetchall():
         eventDict = {}
-        cur.execute("SELECT eventID, title, date FROM events WHERE eventID='%s'" % eventID)
+        cur.execute("SELECT eventID, title, date, promotion FROM events WHERE eventID='%s'" % eventID)
         event = cur.fetchone()
         for x in libraryList:
             if x['ID'] == event[0]:
                 eventDict['thumbPath'] = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 eventDict['fanartPath'] = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
+                eventDict['fallbackFanartPath'] = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
                 break
         eventDict['ID'] = event[0]
         eventDict['title'] = event[1]
@@ -127,12 +128,13 @@ def getEvent(eventID):
         if event[0] == x['ID']:
             thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
             fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
+            fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[2])
             for root, dirs, files in os.walk(x['path']):
                 for vidFile in files:
                     vidFileExt = os.path.splitext(vidFile)[1]
                     vidFilePath = os.path.join(root, vidFile)
-                    if vidFileExt in ['.mkv', '.mp4', '.flv', '.avi']:
-                        addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath, fanartPath)
+                    if vidFileExt in ['.mkv', '.mp4', '.flv', '.avi', '.iso', '.mpg']:
+                        addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath, fanartPath, fallbackFanartPath)
                     else:
                         log('File ignored: %s' % vidFilePath)
 
