@@ -97,22 +97,22 @@ def browseByFighter():
     for fighter in cur.fetchall():
         fighterThumb = fighter[0] + '.jpg'
         thumbPath = os.path.join(__fighterDir__, fighterThumb)
+        if not xbmcvfs.exists(thumbPath):
+            thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
         addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
 
 def getEventsByFighter(fighterID):
 
     cur.execute("SELECT DISTINCT eventID FROM fights WHERE (fighter1='%s' OR fighter2='%s')" % (fighterID, fighterID))
     events = []
-    for eventID in cur.fetchall():
+    IDs = cur.fetchall()
+    for eventID in IDs:
         eventDict = {}
         cur.execute("SELECT eventID, title, date, promotion FROM events WHERE eventID='%s'" % eventID)
         event = cur.fetchone()
-        for x in libraryList:
-            if x['ID'] == event[0]:
-                eventDict['thumbPath'] = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
-                eventDict['fanartPath'] = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                eventDict['fallbackFanartPath'] = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
-                break
+        eventDict['thumbPath'] = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
+        eventDict['fanartPath'] = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
+        eventDict['fallbackFanartPath'] = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
         eventDict['ID'] = event[0]
         eventDict['title'] = event[1]
         eventDict['date'] = event[2]
