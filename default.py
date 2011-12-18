@@ -87,7 +87,8 @@ def getEventsByOrganisation(organisation):
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath, fanartPath)
+                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % organisation)
+                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath, fanartPath, fallbackFanartPath)
 
 def browseByFighter():
 

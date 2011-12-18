@@ -60,7 +60,7 @@ def getUniq(seq):
         result.append(item)
     return result
 
-def addLink(name,descr,url,iconimage,fanart):
+def addLink(name, descr, url, iconimage, fanart, fallbackFanart=''):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
@@ -68,9 +68,13 @@ def addLink(name,descr,url,iconimage,fanart):
     li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr.replace('\n','')} )
     if xbmcvfs.exists(fanart):
         li.setProperty( "Fanart_Image", fanart )
+    elif xbmcvfs.exists(fallbackFanart):
+        li.setProperty( "Fanart_Image", fallbackFanart )
+    else:
+        li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
-def addDir(name,path,page,iconimage,fanart):
+def addDir(name, path, page, iconimage, fanart, fallbackFanart=''):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))
@@ -79,6 +83,10 @@ def addDir(name,path,page,iconimage,fanart):
     #li.setInfo( type="Video", infoLabels={ "Title": name, "Plot": description, "Genre": genre, "Date": date } )
     if xbmcvfs.exists(fanart):
         li.setProperty( "Fanart_Image", fanart )
+    elif xbmcvfs.exists(fallbackFanart):
+        li.setProperty( "Fanart_Image", fallbackFanart )
+    else:
+        li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
 # This function raises a keyboard for user input
