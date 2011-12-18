@@ -34,7 +34,7 @@ def getEventDetails(sherdogEventID):
     log('Promotion: %s' % event['promotion'])
     tempDate = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
     tempYear = tempDate.split(' ')[2]
-    tempDay = tempDate.split(' ')[1].rstrip(',')
+    tempDay = "%.2d" % tempDate.split(' ')[1].rstrip(',')
     tempMonth = tempDate.split(' ')[0]
     if tempMonth == 'January': tempMonth = '01'
     elif tempMonth == 'February': tempMonth = '02'
