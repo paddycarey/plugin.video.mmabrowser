@@ -11,8 +11,8 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 
-from urllib2 import urlopen
-from BeautifulSoup import BeautifulSoup
+from resources.lib.utils import *
+from resources.lib.sherdog import *
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
@@ -27,41 +27,6 @@ __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'thumbs')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
-__artBaseURL__        = "http://dl.dropbox.com/u/266793/mmaartwork/"
-
-### adjust default timeout to stop script hanging
-timeout = 20
-socket.setdefaulttimeout(timeout)
-
-def normalizeString( text ):
-    try: text = unicodedata.normalize( 'NFKD', _unicode( text ) ).encode( 'ascii', 'ignore' )
-    except: pass
-    return text
-
-def log(txt='', severity=xbmc.LOGDEBUG):
-
-    """Log to txt xbmc.log at specified severity"""
-    try:
-        message = ('MMA Browser: %s' % txt)
-        xbmc.log(msg=message, level=severity)
-    except UnicodeEncodeError:
-        try:
-            message = _normalize_string('Artwork Downloader: %s' % txt)
-            xbmc.log(msg=message, level=severity)
-        except:
-            message = ('Artwork Downloader: UnicodeEncodeError')
-            xbmc.log(msg=message, level=xbmc.LOGWARNING)
-
-def getHtml(url):
-    try:
-        client = urlopen(url)
-        data = client.read()
-        client.close()
-    except:
-        log('Error getting data from: %s' % url)
-    else:
-        log('Retrieved URL: %s' % url)
-        return data
 
 def scanLibrary(scriptPath, libraryPath):
 
@@ -94,257 +59,6 @@ def scanLibrary(scriptPath, libraryPath):
             library.append(event)
     return library
 
-# This function raises a keyboard for user input
-def getUserInput(self, title = "Input", default="", hidden=False):
-    result = None
-
-    # Fix for when this functions is called with default=None
-    if not default:
-        default = ""
-
-    keyboard = self.xbmc.Keyboard(default, title)
-    keyboard.setHiddenInput(hidden)
-    keyboard.doModal()
-
-    if keyboard.isConfirmed():
-        result = keyboard.getText()
-
-    return result
-
-def downloadFile(url, filePath):
-
-    """
-    Download url to filePath.
-    """
-    try:
-        dlFile = open(filePath, "wb")
-        response = urlopen(url)
-        dlFile.write(response.read())
-        dlFile.close()
-        response.close()
-    except:
-        xbmcvfs.delete(filePath)
-        log('Unable to download: %s' % url)
-    else:
-        log("Downloaded: %s" % url)
-
-def getEventDetails(sherdogEventID):
-    
-    """
-    This function will retrieve and return all event details from sherdog.com for a given event ID.
-    
-    name: getEventDetails
-    @param sherdogEventID
-    @return event
-    """
-
-    log('########## Getting event details ##########')
-    event = {}
-    event['ID'] = sherdogEventID
-    log('ID: %s' % event['ID'])
-    url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?eventID=%s' % sherdogEventID
-    soup = BeautifulSoup(getHtml(url))
-    event['title'] = soup.find("div", {"class" : "Txt30Blue Bold SpacerLeft8"}).h1.string
-    log('Title: %s' % event['title'])
-    event['promotion'] = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
-    log('Promotion: %s' % event['promotion'])
-    tempDate = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
-    tempYear = tempDate.split(' ')[2]
-    tempDay = tempDate.split(' ')[1].rstrip(',')
-    tempMonth = tempDate.split(' ')[0]
-    if tempMonth == 'January': tempMonth = '01'
-    elif tempMonth == 'February': tempMonth = '02'
-    elif tempMonth == 'March': tempMonth = '03'
-    elif tempMonth == 'April': tempMonth = '04'
-    elif tempMonth == 'May': tempMonth = '05'
-    elif tempMonth == 'June': tempMonth = '06'
-    elif tempMonth == 'July': tempMonth = '07'
-    elif tempMonth == 'August': tempMonth = '08'
-    elif tempMonth == 'September': tempMonth = '09'
-    elif tempMonth == 'October': tempMonth = '10'
-    elif tempMonth == 'November': tempMonth = '11'
-    elif tempMonth == 'December': tempMonth = '12'
-    event['date'] = "%s-%s-%s" % (tempYear, tempMonth, tempDay)
-    log('Date: %s' % event['date'])
-    try:
-        event['venue'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip().rstrip(',')
-        log('Venue: %s' % event['venue'])
-    except:
-        event['venue'] = ''
-        log('Venue: Not Found')
-    try:
-        event['city'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip().lstrip()
-        log('City: %s' % event['city'])
-    except:
-        event['city'] = ''
-        log('City: Not Found')
-    table = soup.find("table", {"class" : "fight_event_card"})
-    event['fights'] = []
-    try:
-        rows = table.findAll('tr')
-        rowcount = 0
-        for row in rows:
-            if not rowcount == 0:
-                cols = row.findAll('td')
-                
-                fight = {}
-                fight['ID'] = cols[0].string
-                fight['fighter1'] = cols[1].a['href'].rsplit('-', 1)[1]
-                fight['fighter2'] = cols[3].a['href'].rsplit('-', 1)[1]
-                if cols[1].findAll(text=True)[1] == 'Winner':
-                    fight['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
-                else:
-                    fight['winner'] = None
-                fight['result'] = cols[4].string
-                fight['round'] = cols[5].string
-                fight['time'] = cols[6].string
-                event['fights'].append(fight)
-                log('Fight %s: %s vs. %s' % (fight['ID'], fight['fighter1'], fight['fighter2']))
-            rowcount = rowcount + 1
-    except:
-        pass
-
-    eventThumb = event['ID'] + '-poster.jpg'
-    eventThumbPath = os.path.join(__thumbDir__, eventThumb)
-    if not xbmcvfs.exists(eventThumbPath):
-        thumbUrl = __artBaseURL__ + 'events/' + eventThumb
-        downloadFile(thumbUrl, eventThumbPath)
-
-    eventFanart = event['ID'] + '-fanart.jpg'
-    eventFanartPath = os.path.join(__thumbDir__, eventFanart)
-    if not xbmcvfs.exists(eventFanartPath):
-        fanartUrl = __artBaseURL__ + 'events/' + eventFanart
-        downloadFile(fanartUrl, eventFanartPath)
-
-    promotionThumb = event['promotion'] + '-poster.jpg'
-    promotionThumbPath = os.path.join(__promotionDir__, promotionThumb)
-    if not xbmcvfs.exists(promotionThumbPath):
-        fanartUrl = __artBaseURL__ + 'promotions/' + promotionThumb
-        downloadFile(fanartUrl, promotionThumbPath)
-
-    promotionFanart = event['promotion'] + '-fanart.jpg'
-    promotionFanartPath = os.path.join(__promotionDir__, promotionFanart)
-    if not xbmcvfs.exists(promotionFanartPath):
-        fanartUrl = __artBaseURL__ + 'promotions/' + promotionFanart
-        downloadFile(fanartUrl, promotionFanartPath)
-
-    log('###### Finished getting event details #####')
-    return event
-
-def getFighterDetails(sherdogFighterID):
-
-    """
-    This function will retrieve and return all event details from sherdog.com for a given event ID.
-    
-    name: getEventDetails
-    @param sherdogEventID
-    @return event
-    """
-
-    log('######### Getting fighter details #########')
-
-    fighter = {}
-    fighter['ID'] = ''
-    fighter['name'] = ''
-    fighter['nickName'] = ''
-    fighter['association'] = ''
-    fighter['height'] = ''
-    fighter['weight'] = ''
-    fighter['birthYear'] = ''
-    fighter['birthDay'] = ''
-    fighter['birthMonth'] = ''
-    fighter['city'] = ''
-    fighter['country'] = ''
-
-    url = 'http://www.sherdog.com/fightfinder/fightfinder.asp?fighterID=%s' % sherdogFighterID
-
-    fighter['ID'] = sherdogFighterID
-    log('ID: %s' % fighter['ID'])
-
-    soup = BeautifulSoup(getHtml(url))
-
-    table = soup.find("span", {"id" : "fighter_profile"})
-    rows = table.findAll('tr')
-    for row in rows:
-        infoItem = row.findAll('td')
-        if infoItem[0].string == None:
-            continue
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Name':
-            fighter['name'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-            log('Name: %s' % fighter['name'])
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Nick Name':
-            fighter['nickName'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-            log('Nickname: %s' % fighter['nickName'])
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Association':
-            fighter['association'] = infoItem[1].a.string.rstrip(' ').rstrip('\n')
-            log('Association: %s' % fighter['association'])
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Height':
-            fighter['height'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-            log('Height: %s' % fighter['height'])
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Weight':
-            fighter['weight'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-            log('Weight: %s' % fighter['weight'])
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Birth Date':
-            fighter['birthYear'] = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[0]
-            fighter['birthMonth'] = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[1]
-            fighter['birthDay'] = infoItem[1].string.rstrip(' ').rstrip('\n').split('-')[2]
-            log('DOB: %s-%s-%s' % (fighter['birthDay'], fighter['birthMonth'], fighter['birthYear']))
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'City':
-            fighter['city'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-            log('City: %s' % fighter['city'])
-        if infoItem[0].string.rstrip(' ').rstrip('\n') == 'Country':
-            fighter['country'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-            log('Country: %s' % fighter['country'])
-    
-    fighterThumb = fighter['ID'] + '.jpg'
-    thumbPath = os.path.join(__fighterDir__, fighterThumb)
-    if not xbmcvfs.exists(thumbPath):
-        thumbUrl = soup.find("span", {"id" : "fighter_picture"}).img['src']
-        if not thumbUrl == 'http://www.cdn.sherdog.com/fightfinder/Pictures/blank_fighter.jpg':
-            downloadFile(thumbUrl, thumbPath)
-    
-    log('##### Finished getting fighter details ####')
-    return fighter
-
-def get_params():
-        param=[]
-        paramstring=sys.argv[2]
-        if len(paramstring)>=2:
-                params=sys.argv[2]
-                cleanedparams=params.replace('?','')
-                if (params[len(params)-1]=='/'):
-                        params=params[0:len(params)-2]
-                pairsofparams=cleanedparams.split('&')
-                param={}
-                for i in range(len(pairsofparams)):
-                        splitparams={}
-                        splitparams=pairsofparams[i].split('=')
-                        if (len(splitparams))==2:
-                                param[splitparams[0]]=splitparams[1]
-                                
-        return param
-
-def addLink(name,descr,url,iconimage,fanart):
-    if not xbmcvfs.exists(iconimage):
-        iconimage=''
-    li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
-    li.setProperty("IsPlayable", "true")
-    li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr.replace('\n','')} )
-    if xbmcvfs.exists(fanart):
-        li.setProperty( "Fanart_Image", fanart )
-    xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
-
-def addDir(name,path,page,iconimage,fanart):
-    if not xbmcvfs.exists(iconimage):
-        iconimage=''
-    u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))
-    li=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=iconimage)
-    li.setInfo( type="Video", infoLabels={ "Title": name })
-    #li.setInfo( type="Video", infoLabels={ "Title": name, "Plot": description, "Genre": genre, "Date": date } )
-    if xbmcvfs.exists(fanart):
-        li.setProperty( "Fanart_Image", fanart )
-    xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
-
 def allEvents():
     
     cur.execute("SELECT DISTINCT eventID, title, date FROM events ORDER BY date")
@@ -354,15 +68,6 @@ def allEvents():
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
                 addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath)
-
-def getUniq(seq): 
-    seen = []
-    result = []
-    for item in seq:
-        if item in seen: continue
-        seen.append(item)
-        result.append(item)
-    return result
 
 def browseByOrganisation():
 
@@ -496,6 +201,7 @@ if (__name__ == "__main__"):
                             cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
                     storageDB.commit()
             except:
+                print sys.exc_info()
                 log('Error adding event to database: %s' % libraryItem['ID'])
                 log('Rolling back database to clean state')
                 storageDB.rollback()
