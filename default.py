@@ -68,7 +68,7 @@ def allEvents():
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
                 fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
-                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath)
+                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
 
 def browseByOrganisation():
 
@@ -118,7 +118,7 @@ def getEventsByFighter(fighterID):
         eventDict['date'] = event[2]
         events.append(eventDict)
     for event in sorted(events, key=lambda k: k['date']):
-        addDir("%s: %s" % (event['date'], event['title']), "/getEvent/%s" % event['ID'], 1, event['thumbPath'], eventDict['fanartPath'])
+        addDir("%s: %s" % (event['date'], event['title']), "/getEvent/%s" % event['ID'], 1, event['thumbPath'], eventDict['fanartPath'], eventDict['fallbackFanartPath'])
 
 def getEvent(eventID):
     
