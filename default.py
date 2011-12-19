@@ -103,22 +103,12 @@ def browseByFighter():
 
 def getEventsByFighter(fighterID):
 
-    cur.execute("SELECT DISTINCT eventID FROM fights WHERE (fighter1='%s' OR fighter2='%s')" % (fighterID, fighterID))
-    events = []
-    IDs = cur.fetchall()
-    for eventID in IDs:
-        eventDict = {}
-        cur.execute("SELECT eventID, title, date, promotion FROM events WHERE eventID='%s'" % eventID)
-        event = cur.fetchone()
-        eventDict['thumbPath'] = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
-        eventDict['fanartPath'] = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
-        eventDict['fallbackFanartPath'] = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
-        eventDict['ID'] = event[0]
-        eventDict['title'] = event[1]
-        eventDict['date'] = event[2]
-        events.append(eventDict)
-    for event in sorted(events, key=lambda k: k['date']):
-        addDir("%s: %s" % (event['date'], event['title']), "/getEvent/%s" % event['ID'], 1, event['thumbPath'], eventDict['fanartPath'], eventDict['fallbackFanartPath'])
+    cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
+    for event in cur.fetchall():
+        thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
+        fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
+        fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
+        addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
 
 def getEvent(eventID):
     
