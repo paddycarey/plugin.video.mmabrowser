@@ -112,6 +112,27 @@ def getEventsByFighter(fighterID):
         fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
         addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
 
+def searchAll():
+    searchStr = getUserInput(title = "Search MMA Library")
+    log("Searched for: %s" % searchStr)
+    cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events WHERE (eventID LIKE '%s' OR title LIKE '%s' OR promotion LIKE '%s' OR date LIKE '%s' OR venue LIKE '%s' OR city LIKE '%s') ORDER BY date" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+    for event in cur.fetchall():
+        for x in libraryList:
+            if event[0] == x['ID']:
+                thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
+                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
+                log("Found: Event: %s: %s" % (event[2], event[1]))
+                addDir("Event: %s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
+    cur.execute("SELECT DISTINCT fighterID, name FROM fighters WHERE (fighterID LIKE '%s' OR name LIKE '%s' OR nickname LIKE '%s' OR association LIKE '%s' OR city LIKE '%s' OR country LIKE '%s') ORDER BY name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+    for fighter in cur.fetchall():
+        fighterThumb = fighter[0] + '.jpg'
+        thumbPath = os.path.join(__fighterDir__, fighterThumb)
+        if not xbmcvfs.exists(thumbPath):
+            thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
+        log('Found: Fighter: %s' % fighter[1])
+        addDir('Fighter: %s' % fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
+
 def getEvent(eventID):
     
     cur.execute("SELECT * FROM events WHERE eventID='%s'" % eventID)
@@ -131,6 +152,8 @@ def getEvent(eventID):
                         log('File ignored: %s' % vidFilePath)
 
 if (__name__ == "__main__"):
+
+    xbmcplugin.setContent(__addonidint__, 'movies') 
 
     ## parse plugin arguments
     params = get_params()
@@ -208,6 +231,7 @@ if (__name__ == "__main__"):
         addDir("Browse by: Organisation", "/browsebyorganisation/", 1, "", "")
         addDir("Browse by: Fighter", "/browsebyfighter/", 1, "", "")
         addDir("All Events", "/allevents/", 1, "", "")
+        addDir("Search", "/search/", 1, "", "")
     
     else:
         if path.startswith("/browsebyorganisation/"):
@@ -233,6 +257,9 @@ if (__name__ == "__main__"):
         elif path == "/allevents/":
             ## populate list of all events
             allEvents()
+        elif path == "/search/":
+            ## populate list of all events
+            searchAll()
         elif path.startswith("/getEvent/"):
             eventID = path.replace('/getEvent/','')
             ## populate list of all video files for a given event

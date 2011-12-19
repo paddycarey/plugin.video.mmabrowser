@@ -90,14 +90,14 @@ def addDir(name, path, page, iconimage, fanart='', fallbackFanart=''):
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
 # This function raises a keyboard for user input
-def getUserInput(self, title = "Input", default="", hidden=False):
+def getUserInput(title = "Input", default="", hidden=False):
     result = None
 
     # Fix for when this functions is called with default=None
     if not default:
         default = ""
 
-    keyboard = self.xbmc.Keyboard(default, title)
+    keyboard = xbmc.Keyboard(default, title)
     keyboard.setHiddenInput(hidden)
     keyboard.doModal()
 
