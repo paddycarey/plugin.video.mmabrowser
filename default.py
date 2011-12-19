@@ -67,7 +67,7 @@ def allEvents():
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
+                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
                 addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
 
 def browseByOrganisation():
@@ -76,8 +76,8 @@ def browseByOrganisation():
     for promotion in cur.fetchall():
         promotionThumb = promotion[0] + '-poster.jpg'
         promotionFanart = promotion[0] + '-fanart.jpg'
-        thumbPath = os.path.join(__promotionDir__, promotionThumb)
-        fanartPath = os.path.join(__promotionDir__, promotionFanart)
+        thumbPath = os.path.join(__promotionDir__, promotionThumb.replace(' ', ''))
+        fanartPath = os.path.join(__promotionDir__, promotionFanart.replace(' ', ''))
         addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
 
 def getEventsByOrganisation(organisation):
@@ -88,7 +88,7 @@ def getEventsByOrganisation(organisation):
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % organisation)
+                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % organisation.replace(' ', ''))
                 addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath, fanartPath, fallbackFanartPath)
 
 def browseByFighter():
@@ -112,7 +112,7 @@ def getEventsByFighter(fighterID):
         event = cur.fetchone()
         eventDict['thumbPath'] = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
         eventDict['fanartPath'] = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
-        eventDict['fallbackFanartPath'] = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3])
+        eventDict['fallbackFanartPath'] = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
         eventDict['ID'] = event[0]
         eventDict['title'] = event[1]
         eventDict['date'] = event[2]
@@ -128,7 +128,7 @@ def getEvent(eventID):
         if event[0] == x['ID']:
             thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
             fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-            fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[2])
+            fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[2].replace(' ', ''))
             for root, dirs, files in os.walk(x['path']):
                 for vidFile in files:
                     vidFileExt = os.path.splitext(vidFile)[1]
