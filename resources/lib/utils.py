@@ -74,7 +74,7 @@ def addLink(name, descr, url, iconimage, fanart='', fallbackFanart=''):
         li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
-def addDir(name, path, page, iconimage, fanart='', fallbackFanart=''):
+def addDir(name, path, page, iconimage, fanart=''):
     if not xbmcvfs.exists(iconimage):
         iconimage=''
     u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))
@@ -83,8 +83,6 @@ def addDir(name, path, page, iconimage, fanart='', fallbackFanart=''):
     #li.setInfo( type="Video", infoLabels={ "Title": name, "Plot": description, "Genre": genre, "Date": date } )
     if xbmcvfs.exists(fanart):
         li.setProperty( "Fanart_Image", fanart )
-    elif xbmcvfs.exists(fallbackFanart):
-        li.setProperty( "Fanart_Image", fallbackFanart )
     else:
         li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
@@ -120,8 +118,10 @@ def downloadFile(url, filePath):
     except:
         xbmcvfs.delete(filePath)
         log('Unable to download: %s' % url)
+        return False
     else:
         log("Downloaded: %s" % url)
+        return True
 
 def normalizeString( text ):
     try: text = unicodedata.normalize( 'NFKD', _unicode( text ) ).encode( 'ascii', 'ignore' )

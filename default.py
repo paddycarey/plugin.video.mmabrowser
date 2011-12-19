@@ -63,16 +63,11 @@ def scanLibrary(scriptPath, libraryPath):
 
 def allEvents():
     
-    cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events ORDER BY date")
+    cur.execute("SELECT DISTINCT eventID, title, promotion, date, venue, city FROM events ORDER BY date")
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
-                if not xbmcvfs.exists(thumbPath):
-                    thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[3].replace(' ', ''))
-                fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
-                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
 
 def browseByOrganisation():
 
@@ -88,17 +83,11 @@ def browseByOrganisation():
         addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
 
 def getEventsByOrganisation(organisation):
-
-    cur.execute("SELECT eventID, title, date FROM events WHERE promotion='%s' ORDER BY date" % organisation)
+    cur.execute("SELECT eventID, title, promotion, date, venue, city FROM events WHERE promotion='%s' ORDER BY date" % organisation)
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
-                if not xbmcvfs.exists(thumbPath):
-                    thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % organisation.replace(' ', ''))
-                fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % organisation.replace(' ', ''))
-                addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath, fanartPath, fallbackFanartPath)
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
 
 def browseByFighter():
 
@@ -112,18 +101,15 @@ def browseByFighter():
 
 def getEventsByFighter(fighterID):
 
-    cur.execute("SELECT DISTINCT events.eventID, events.title, events.date, events.promotion FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
+    cur.execute("SELECT DISTINCT events.eventID, events.title, events.promotion, events.date, events.venue, events.city FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
     for event in cur.fetchall():
-        thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
-        if not xbmcvfs.exists(thumbPath):
-            thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[3].replace(' ', ''))
-        fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
-        fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
-        addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
+        for x in libraryList:
+            if event[0] == x['ID']:
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
 
 def searchAll():
     searchStr = getUserInput(title = "Search MMA Library")
-    log("Searched for: %s" % searchStr)
+    log("Searching for: %s" % searchStr)
     cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events WHERE (eventID LIKE '%s' OR title LIKE '%s' OR promotion LIKE '%s' OR date LIKE '%s' OR venue LIKE '%s' OR city LIKE '%s') ORDER BY date" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
     for event in cur.fetchall():
         for x in libraryList:
@@ -163,6 +149,29 @@ def getEvent(eventID):
                         addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath, fanartPath, fallbackFanartPath)
                     else:
                         log('File ignored: %s' % vidFilePath)
+
+def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = ''):
+    thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % eventPromotion.replace(' ', ''))
+    fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % eventID)
+    if not xbmcvfs.exists(fanartPath):
+        fanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % eventPromotion.replace(' ', ''))
+    outline = '%s: %s, %s' % (eventDate, eventVenue, eventCity)
+    try:
+        description = open(os.path.join(__thumbDir__, '%s-description.txt' % eventID)).read()
+    except IOError:
+        description = outline
+    log("Adding: Event: %s: %s" % (eventDate, eventTitle))
+    u = sys.argv[0] + "?path=/getEvent/%s" % eventID
+    #li=xbmcgui.ListItem("%s: %s" % (eventDate, eventTitle), iconImage = "DefaultFolder.png", thumbnailImage = thumbPath)
+    li=xbmcgui.ListItem(label = "%s: %s" % (eventDate, eventTitle), iconImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
+    if xbmcvfs.exists(fanartPath):
+        li.setProperty( "Fanart_Image", fanartPath )
+    else:
+        li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
+    xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
 
 if (__name__ == "__main__"):
 
