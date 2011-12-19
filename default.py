@@ -103,7 +103,7 @@ def browseByFighter():
 
 def getEventsByFighter(fighterID):
 
-    cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
+    cur.execute("SELECT DISTINCT events.eventID, events.title, events.date, events.promotion FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
     for event in cur.fetchall():
         thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
         fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
