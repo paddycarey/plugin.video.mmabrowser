@@ -166,13 +166,13 @@ def getArtwork(promotionName=None, eventID=None):
         fanartUrl = __artBaseURL__ + 'events/' + eventFanart
         downloadFile(fanartUrl, eventFanartPath)
 
-    promotionThumb = promotionName + '-poster.jpg'
+    promotionThumb = promotionName.replace(' ', '') + '-poster.jpg'
     promotionThumbPath = os.path.join(__promotionDir__, promotionThumb)
     if not xbmcvfs.exists(promotionThumbPath):
         fanartUrl = __artBaseURL__ + 'promotions/' + promotionThumb
         downloadFile(fanartUrl, promotionThumbPath)
 
-    promotionFanart = promotionName + '-fanart.jpg'
+    promotionFanart = promotionName.replace(' ', '') + '-fanart.jpg'
     promotionFanartPath = os.path.join(__promotionDir__, promotionFanart)
     if not xbmcvfs.exists(promotionFanartPath):
         fanartUrl = __artBaseURL__ + 'promotions/' + promotionFanart
