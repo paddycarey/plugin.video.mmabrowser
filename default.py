@@ -36,17 +36,19 @@ def scanLibrary(scriptPath, libraryPath):
         cur.execute("DROP TABLE IF EXISTS library")
         cur.execute("CREATE TABLE library(ID TEXT, path TEXT)")
         library = []
-        idFile = 'sherdogEventID'
+        idFiles = ['sherdogEventID', 'sherdogEventID.nfo']
         for x in os.walk(libraryPath):
-            pathIdFile = os.path.join(x[0], idFile)
-            if xbmcvfs.exists(pathIdFile):
-                event = {}
-                event['ID'] = open(pathIdFile).read()
-                event['ID'] = event['ID'].replace('\n', '')
-                event['path'] = x[0]
-                log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
-                library.append(event)
-                cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+            for idFile in idFiles:
+                pathIdFile = os.path.join(x[0], idFile)
+                if xbmcvfs.exists(pathIdFile):
+                    event = {}
+                    event['ID'] = open(pathIdFile).read()
+                    event['ID'] = event['ID'].replace('\n', '')
+                    event['path'] = x[0]
+                    log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
+                    library.append(event)
+                    cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+                    break
         storageDB.commit()
     else:
         ## loading library from storage
