@@ -68,6 +68,8 @@ def allEvents():
         for x in libraryList:
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                if not xbmcvfs.exists(thumbPath):
+                    thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[3].replace(' ', ''))
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
                 fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
                 addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
@@ -92,6 +94,8 @@ def getEventsByOrganisation(organisation):
         for x in libraryList:
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                if not xbmcvfs.exists(thumbPath):
+                    thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % organisation.replace(' ', ''))
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
                 fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % organisation.replace(' ', ''))
                 addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % x['ID'], 1, thumbPath, fanartPath, fallbackFanartPath)
@@ -111,6 +115,8 @@ def getEventsByFighter(fighterID):
     cur.execute("SELECT DISTINCT events.eventID, events.title, events.date, events.promotion FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
     for event in cur.fetchall():
         thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % event[0])
+        if not xbmcvfs.exists(thumbPath):
+            thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[3].replace(' ', ''))
         fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % event[0])
         fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
         addDir("%s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
@@ -123,6 +129,8 @@ def searchAll():
         for x in libraryList:
             if event[0] == x['ID']:
                 thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+                if not xbmcvfs.exists(thumbPath):
+                    thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[3].replace(' ', ''))
                 fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
                 fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
                 log("Found: Event: %s: %s" % (event[2], event[1]))
@@ -143,6 +151,8 @@ def getEvent(eventID):
     for x in libraryList:
         if event[0] == x['ID']:
             thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
+            if not xbmcvfs.exists(thumbPath):
+                thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[2].replace(' ', ''))
             fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
             fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[2].replace(' ', ''))
             for root, dirs, files in os.walk(x['path']):
