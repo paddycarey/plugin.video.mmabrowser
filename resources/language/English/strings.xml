@@ -2,5 +2,6 @@
 <strings>
         <string id="32001">General Settings</string>
         <string id="32002">MMA Library Path</string>
-        <string id="32003">Force full rescan</string>
+        <string id="32003">Use banners instead of posters for Promotion thumbs</string>
+        <string id="32004">Force full rescan</string>
 </strings>

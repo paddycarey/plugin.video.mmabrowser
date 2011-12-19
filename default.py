@@ -76,8 +76,11 @@ def browseByOrganisation():
 
     cur.execute("SELECT DISTINCT promotion FROM events ORDER BY promotion")
     for promotion in cur.fetchall():
-        promotionThumb = promotion[0] + '-poster.jpg'
         promotionFanart = promotion[0] + '-fanart.jpg'
+        if __addon__.getSetting("useBanners") == 'true':
+            promotionThumb = promotion[0] + '-banner.jpg'
+        else:
+            promotionThumb = promotion[0] + '-poster.jpg'
         thumbPath = os.path.join(__promotionDir__, promotionThumb.replace(' ', ''))
         fanartPath = os.path.join(__promotionDir__, promotionFanart.replace(' ', ''))
         addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
