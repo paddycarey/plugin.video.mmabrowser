@@ -73,14 +73,7 @@ def browseByOrganisation():
 
     cur.execute("SELECT DISTINCT promotion FROM events ORDER BY promotion")
     for promotion in cur.fetchall():
-        promotionFanart = promotion[0] + '-fanart.jpg'
-        if __addon__.getSetting("useBanners") == 'true':
-            promotionThumb = promotion[0] + '-banner.jpg'
-        else:
-            promotionThumb = promotion[0] + '-poster.jpg'
-        thumbPath = os.path.join(__promotionDir__, promotionThumb.replace(' ', ''))
-        fanartPath = os.path.join(__promotionDir__, promotionFanart.replace(' ', ''))
-        addDir(promotion[0], "/browsebyorganisation/%s" % promotion[0], 1, thumbPath, fanartPath)
+        addPromotion(promotion[0])
 
 def getEventsByOrganisation(organisation):
     cur.execute("SELECT eventID, title, promotion, date, venue, city FROM events WHERE promotion='%s' ORDER BY date" % organisation)
@@ -91,13 +84,9 @@ def getEventsByOrganisation(organisation):
 
 def browseByFighter():
 
-    cur.execute("SELECT DISTINCT fighterID, name FROM fighters ORDER BY name")
+    cur.execute("SELECT DISTINCT * FROM fighters ORDER BY name")
     for fighter in cur.fetchall():
-        fighterThumb = fighter[0] + '.jpg'
-        thumbPath = os.path.join(__fighterDir__, fighterThumb)
-        if not xbmcvfs.exists(thumbPath):
-            thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
-        addDir(fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
+        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10])
 
 def getEventsByFighter(fighterID):
 
@@ -110,25 +99,14 @@ def getEventsByFighter(fighterID):
 def searchAll():
     searchStr = getUserInput(title = "Search MMA Library")
     log("Searching for: %s" % searchStr)
-    cur.execute("SELECT DISTINCT eventID, title, date, promotion FROM events WHERE (eventID LIKE '%s' OR title LIKE '%s' OR promotion LIKE '%s' OR date LIKE '%s' OR venue LIKE '%s' OR city LIKE '%s') ORDER BY date" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+    cur.execute("SELECT DISTINCT eventID, title, promotion, date, venue, city FROM events WHERE (eventID LIKE '%s' OR title LIKE '%s' OR promotion LIKE '%s' OR date LIKE '%s' OR venue LIKE '%s' OR city LIKE '%s') ORDER BY date" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
-                if not xbmcvfs.exists(thumbPath):
-                    thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[3].replace(' ', ''))
-                fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-                fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[3].replace(' ', ''))
-                log("Found: Event: %s: %s" % (event[2], event[1]))
-                addDir("Event: %s: %s" % (event[2], event[1]), "/getEvent/%s" % event[0], 1, thumbPath, fanartPath, fallbackFanartPath)
-    cur.execute("SELECT DISTINCT fighterID, name FROM fighters WHERE (fighterID LIKE '%s' OR name LIKE '%s' OR nickname LIKE '%s' OR association LIKE '%s' OR city LIKE '%s' OR country LIKE '%s') ORDER BY name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
+    cur.execute("SELECT DISTINCT * FROM fighters WHERE (fighterID LIKE '%s' OR name LIKE '%s' OR nickname LIKE '%s' OR association LIKE '%s' OR city LIKE '%s' OR country LIKE '%s') ORDER BY name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
     for fighter in cur.fetchall():
-        fighterThumb = fighter[0] + '.jpg'
-        thumbPath = os.path.join(__fighterDir__, fighterThumb)
-        if not xbmcvfs.exists(thumbPath):
-            thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
-        log('Found: Fighter: %s' % fighter[1])
-        addDir('Fighter: %s' % fighter[1], "/browsebyfighter/%s" % fighter[0], 1, thumbPath)
+        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10])
 
 def getEvent(eventID):
     
@@ -154,9 +132,13 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
     if not xbmcvfs.exists(thumbPath):
         thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % eventPromotion.replace(' ', ''))
+        if not xbmcvfs.exists(thumbPath):
+            thumbPath = "DefaultFolder.png"
     fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % eventID)
     if not xbmcvfs.exists(fanartPath):
         fanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % eventPromotion.replace(' ', ''))
+        if not xbmcvfs.exists(fanartPath):
+            fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
     outline = '%s: %s, %s' % (eventDate, eventVenue, eventCity)
     try:
         description = open(os.path.join(__thumbDir__, '%s-description.txt' % eventID)).read()
@@ -164,14 +146,52 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
         description = outline
     log("Adding: Event: %s: %s" % (eventDate, eventTitle))
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
-    #li=xbmcgui.ListItem("%s: %s" % (eventDate, eventTitle), iconImage = "DefaultFolder.png", thumbnailImage = thumbPath)
-    li=xbmcgui.ListItem(label = "%s: %s" % (eventDate, eventTitle), iconImage = thumbPath)
+    li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
-    if xbmcvfs.exists(fanartPath):
-        li.setProperty( "Fanart_Image", fanartPath )
+    li.setProperty( "Fanart_Image", fanartPath )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
+
+def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = ''):
+    fighterThumb = fighterID + '.jpg'
+    thumbPath = os.path.join(__fighterDir__, fighterThumb)
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
+    fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+    outline = '%s "%s"' % (fighterName, fighterNickname)
+    description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay), fighterCity, fighterCountry)
+    log("Adding: Fighter: %s" % fighterName)
+    u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
+    li=xbmcgui.ListItem(label = fighterName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "plotoutline": outline} )
+    li.setProperty( "Fanart_Image", fanartPath )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
+
+def addPromotion(promotionName):
+    
+    if __addon__.getSetting("useBanners") == 'true':
+        promotionThumb = promotionName + '-banner.jpg'
     else:
-        li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
-    xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
+        promotionThumb = promotionName + '-poster.jpg'
+    thumbPath = os.path.join(__promotionDir__, promotionThumb.replace(' ', ''))
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = "DefaultFolder.png"
+
+    promotionFanart = promotionName + '-fanart.jpg'
+    fanartPath = os.path.join(__promotionDir__, promotionFanart.replace(' ', ''))
+    if not xbmcvfs.exists(fanartPath):
+        fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+
+    try:
+        description = open(os.path.join(__promotionDir__, '%s-description.txt' % promotionName.replace(' ', ''))).read()
+    except IOError:
+        description = ''
+
+    log("Adding: Promotion: %s" % promotionName)
+    u = sys.argv[0] + "?path=/browsebyorganisation/%s" % promotionName
+    li=xbmcgui.ListItem(label = promotionName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "title": promotionName, "plot": description, "genre": "MMA"} )
+    li.setProperty( "Fanart_Image", fanartPath )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
 if (__name__ == "__main__"):
 
