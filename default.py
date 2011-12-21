@@ -70,12 +70,13 @@ def allEvents():
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
 
 def browseByOrganisation():
-
+    log('Browsing: Organisations')
     cur.execute("SELECT DISTINCT promotion FROM events ORDER BY promotion")
     for promotion in cur.fetchall():
         addPromotion(promotion[0])
 
 def getEventsByOrganisation(organisation):
+    log('Listing all events for: %s' % organisation)
     cur.execute("SELECT eventID, title, promotion, date, venue, city FROM events WHERE promotion='%s' ORDER BY date" % organisation)
     for event in cur.fetchall():
         for x in libraryList:
@@ -128,71 +129,6 @@ def getEvent(eventID):
                     else:
                         log('File ignored: %s' % vidFilePath)
 
-def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = ''):
-    thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
-    if not xbmcvfs.exists(thumbPath):
-        thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % eventPromotion.replace(' ', ''))
-        if not xbmcvfs.exists(thumbPath):
-            thumbPath = "DefaultFolder.png"
-    fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % eventID)
-    if not xbmcvfs.exists(fanartPath):
-        fanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % eventPromotion.replace(' ', ''))
-        if not xbmcvfs.exists(fanartPath):
-            fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
-    outline = '%s: %s, %s' % (eventDate, eventVenue, eventCity)
-    try:
-        description = open(os.path.join(__thumbDir__, '%s-description.txt' % eventID)).read()
-    except IOError:
-        description = outline
-    log("Adding: Event: %s: %s" % (eventDate, eventTitle))
-    u = sys.argv[0] + "?path=/getEvent/%s" % eventID
-    li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
-    li.setProperty( "Fanart_Image", fanartPath )
-    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
-
-def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = ''):
-    fighterThumb = fighterID + '.jpg'
-    thumbPath = os.path.join(__fighterDir__, fighterThumb)
-    if not xbmcvfs.exists(thumbPath):
-        thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
-    fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
-    outline = '%s "%s"' % (fighterName, fighterNickname)
-    description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay), fighterCity, fighterCountry)
-    log("Adding: Fighter: %s" % fighterName)
-    u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
-    li=xbmcgui.ListItem(label = fighterName, iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "plotoutline": outline} )
-    li.setProperty( "Fanart_Image", fanartPath )
-    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
-
-def addPromotion(promotionName):
-    
-    if __addon__.getSetting("useBanners") == 'true':
-        promotionThumb = promotionName + '-banner.jpg'
-    else:
-        promotionThumb = promotionName + '-poster.jpg'
-    thumbPath = os.path.join(__promotionDir__, promotionThumb.replace(' ', ''))
-    if not xbmcvfs.exists(thumbPath):
-        thumbPath = "DefaultFolder.png"
-
-    promotionFanart = promotionName + '-fanart.jpg'
-    fanartPath = os.path.join(__promotionDir__, promotionFanart.replace(' ', ''))
-    if not xbmcvfs.exists(fanartPath):
-        fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
-
-    try:
-        description = open(os.path.join(__promotionDir__, '%s-description.txt' % promotionName.replace(' ', ''))).read()
-    except IOError:
-        description = ''
-
-    log("Adding: Promotion: %s" % promotionName)
-    u = sys.argv[0] + "?path=/browsebyorganisation/%s" % promotionName
-    li=xbmcgui.ListItem(label = promotionName, iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": promotionName, "plot": description, "genre": "MMA"} )
-    li.setProperty( "Fanart_Image", fanartPath )
-    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
-
 if (__name__ == "__main__"):
 
     xbmcplugin.setContent(__addonidint__, 'movies') 
@@ -200,17 +136,13 @@ if (__name__ == "__main__"):
     ## parse plugin arguments
     params = get_params()
 
-    ## get page number
-    try:
-        page = int(urllib.unquote_plus(params["page"]))
-    except:
-        page = 1
-
     ## get path
     try:
         path = urllib.unquote_plus(params["path"])
     except:
         path = "/"
+
+    log('Script path: %s' % path)
 
     ## create directories needed for script operation
     for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __promotionDir__]:
@@ -270,36 +202,35 @@ if (__name__ == "__main__"):
     ## check path and generate desired list
     if path == "/":
         ## populate main menu
-        addDir("Browse by: Organisation", "/browsebyorganisation/", 1, "", "")
-        addDir("Browse by: Fighter", "/browsebyfighter/", 1, "", "")
-        addDir("All Events", "/allevents/", 1, "", "")
-        addDir("Search", "/search/", 1, "", "")
-    
+        addDir("Browse by: Organisation", "/browsebyorganisation/", "", "", "Browse a list of all MMA Promotions in your library.")
+        addDir("Browse by: Fighter", "/browsebyfighter/", "", "", "Browse a list of all fighters in your library")
+        addDir("All Events", "/allevents/", "", "", "Browse a list of all fighters in your library")
+        addDir("Search", "/search/", "", "", "Search all items in your library")
     else:
-        if path.startswith("/browsebyorganisation/"):
+        if path.startswith("/browsebyorganisation"):
             log("path:%s" % path)
-            organisation = path.replace('/browsebyorganisation/','')
+            organisation = path.replace('/browsebyorganisation','')
             log("organisation:%s" % organisation)
             if organisation == '':
                 ## populate list of organisations
                 browseByOrganisation()
             else:
                 ## populate list of events for a given organisation
-                getEventsByOrganisation(organisation)
-        elif path.startswith("/browsebyfighter/"):
+                getEventsByOrganisation(organisation.lstrip('/'))
+        elif path.startswith("/browsebyfighter"):
             log("path:%s" % path)
-            fighterID = path.replace('/browsebyfighter/','')
+            fighterID = path.replace('/browsebyfighter','')
             log("fighterID:%s" % fighterID)
             if fighterID == '':
                 ## populate list of fighters
                 browseByFighter()
             else:
                 ## populate list of all events a given fighter has fought in
-                getEventsByFighter(fighterID)
-        elif path == "/allevents/":
+                getEventsByFighter(fighterID.lstrip('/'))
+        elif path == "/allevents":
             ## populate list of all events
             allEvents()
-        elif path == "/search/":
+        elif path == "/search":
             ## populate list of all events
             searchAll()
         elif path.startswith("/getEvent/"):

@@ -74,18 +74,81 @@ def addLink(name, descr, url, iconimage, fanart='', fallbackFanart=''):
         li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
     xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
 
-def addDir(name, path, page, iconimage, fanart=''):
-    if not xbmcvfs.exists(iconimage):
-        iconimage=''
-    u=sys.argv[0]+"?path=%s&page=%s"%(path,str(page))
-    li=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=iconimage)
-    li.setInfo( type="Video", infoLabels={ "Title": name })
-    #li.setInfo( type="Video", infoLabels={ "Title": name, "Plot": description, "Genre": genre, "Date": date } )
-    if xbmcvfs.exists(fanart):
-        li.setProperty( "Fanart_Image", fanart )
+def addDir(dirName, targetPath, thumbPath, fanartPath, description):
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = "DefaultFolder.png"
+    if not xbmcvfs.exists(fanartPath):
+        fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+    u = sys.argv[0] + "?path=%s" % targetPath
+    li = xbmcgui.ListItem(dirName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "Title": dirName , "Plot": description})
+    li.setProperty( "Fanart_Image", fanartPath)
+    xbmcplugin.addDirectoryItem(handle = __addonidint__ ,url = u, listitem = li, isFolder = True)
+
+def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = ''):
+    thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % eventPromotion.replace(' ', ''))
+        if not xbmcvfs.exists(thumbPath):
+            thumbPath = "DefaultFolder.png"
+    fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % eventID)
+    if not xbmcvfs.exists(fanartPath):
+        fanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % eventPromotion.replace(' ', ''))
+        if not xbmcvfs.exists(fanartPath):
+            fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+    outline = '%s: %s, %s' % (eventDate, eventVenue, eventCity)
+    try:
+        description = open(os.path.join(__thumbDir__, '%s-description.txt' % eventID)).read()
+    except IOError:
+        description = outline
+    log("Adding: Event: %s: %s" % (eventDate, eventTitle))
+    u = sys.argv[0] + "?path=/getEvent/%s" % eventID
+    li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
+    li.setProperty( "Fanart_Image", fanartPath )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
+
+def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = ''):
+    fighterThumb = fighterID + '.jpg'
+    thumbPath = os.path.join(__fighterDir__, fighterThumb)
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
+    fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+    outline = '%s "%s"' % (fighterName, fighterNickname)
+    description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay), fighterCity, fighterCountry)
+    log("Adding: Fighter: %s" % fighterName)
+    u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
+    li=xbmcgui.ListItem(label = fighterName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "plotoutline": outline} )
+    li.setProperty( "Fanart_Image", fanartPath )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
+
+def addPromotion(promotionName):
+    
+    if __addon__.getSetting("useBanners") == 'true':
+        promotionThumb = promotionName + '-banner.jpg'
     else:
-        li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
-    xbmcplugin.addDirectoryItem(handle=__addonidint__,url=u,listitem=li,isFolder=True)
+        promotionThumb = promotionName + '-poster.jpg'
+    thumbPath = os.path.join(__promotionDir__, promotionThumb.replace(' ', ''))
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = "DefaultFolder.png"
+
+    promotionFanart = promotionName + '-fanart.jpg'
+    fanartPath = os.path.join(__promotionDir__, promotionFanart.replace(' ', ''))
+    if not xbmcvfs.exists(fanartPath):
+        fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+
+    try:
+        description = open(os.path.join(__promotionDir__, '%s-description.txt' % promotionName.replace(' ', ''))).read()
+    except IOError:
+        description = ''
+
+    log("Adding: Promotion: %s" % promotionName)
+    u = sys.argv[0] + "?path=/browsebyorganisation/%s" % promotionName
+    li=xbmcgui.ListItem(label = promotionName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "title": promotionName, "plot": description, "genre": "MMA"} )
+    li.setProperty( "Fanart_Image", fanartPath )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
 # This function raises a keyboard for user input
 def getUserInput(title = "Input", default="", hidden=False):
