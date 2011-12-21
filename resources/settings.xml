@@ -3,6 +3,7 @@
     <category label="32001" id="section_general">
         <setting label="32002" id="libraryPath" type="folder" default="" subsetting="true" source="auto" option="writeable"/>
         <setting label="32003" id="useBanners" type="bool" default="false"/>
+        <setting label="32006" id="cleanFilenames" type="bool" default="false"/>
         <setting label="32004" id="checkMissingExtras" type="bool" default="false"/>
         <setting type="sep"/>
         <setting label="32005" id="forceFullRescan" type="bool" default="false"/>

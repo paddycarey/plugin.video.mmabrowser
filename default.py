@@ -24,7 +24,7 @@ __version__           = __addon__.getAddonInfo('version')
 __localize__          = __addon__.getLocalizedString
 __addonpath__         = __addon__.getAddonInfo('path')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-__thumbDir__          = os.path.join(__addondir__, 'thumbs')
+__thumbDir__          = os.path.join(__addondir__, 'events')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 
@@ -119,15 +119,30 @@ def getEvent(eventID):
             if not xbmcvfs.exists(thumbPath):
                 thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % event[2].replace(' ', ''))
             fanartPath = os.path.join(__thumbDir__, '%s-fanart.jpg' % x['ID'])
-            fallbackFanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[2].replace(' ', ''))
+            if not xbmcvfs.exists(fanartPath):
+                fanartPath = os.path.join(__promotionDir__, '%s-fanart.jpg' % event[2].replace(' ', ''))
+            outline = '%s: %s, %s' % (event[3], event[4], event[5])
+            try:
+                description = open(os.path.join(__thumbDir__, '%s-description.txt' % event[0])).read()
+            except IOError:
+                description = outline
+            fileList = []
             for root, dirs, files in os.walk(x['path']):
-                for vidFile in files:
-                    vidFileExt = os.path.splitext(vidFile)[1]
-                    vidFilePath = os.path.join(root, vidFile)
-                    if vidFileExt in ['.mkv', '.mp4', '.flv', '.avi', '.iso', '.mpg']:
-                        addLink(vidFile, '%s: %s, %s' % (event[3], event[4], event[5]), vidFilePath, thumbPath, fanartPath, fallbackFanartPath)
+                for vidFileName in files:
+                    vidFile = {}
+                    vidFile['filename'] = vidFileName
+                    vidFile['ext'] = os.path.splitext(vidFileName)[1]
+                    vidFile['path'] = os.path.join(root, vidFileName)
+                    if __addon__.getSetting("cleanFilenames") == 'true':
+                        vidFile['title'] = os.path.splitext(vidFileName)[0].lstrip('0123456789. ')
                     else:
-                        log('File ignored: %s' % vidFilePath)
+                        vidFile['title'] = vidFileName
+                    if vidFile['ext'] in ['.mkv', '.mp4', '.flv', '.avi', '.iso', '.mpg']:
+                        fileList.append(vidFile)
+                    else:
+                        log('File ignored: %s' % vidFile['path'])
+            for vidFile in sorted(fileList, key=lambda k: k['filename']):
+                addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = 'MMA')
 
 if (__name__ == "__main__"):
 

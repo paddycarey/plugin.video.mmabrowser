@@ -60,19 +60,16 @@ def getUniq(seq):
         result.append(item)
     return result
 
-def addLink(name, descr, url, iconimage, fanart='', fallbackFanart=''):
-    if not xbmcvfs.exists(iconimage):
-        iconimage="DefaultVideo.png"
-    li = xbmcgui.ListItem(name, iconImage=iconimage)
-    li.setProperty("IsPlayable", "true")
-    li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr.replace('\n','')} )
-    if xbmcvfs.exists(fanart):
-        li.setProperty( "Fanart_Image", fanart )
-    elif xbmcvfs.exists(fallbackFanart):
-        li.setProperty( "Fanart_Image", fallbackFanart )
-    else:
-        li.setProperty( "Fanart_Image", os.path.join(__addonpath__, 'fanart.jpg'))
-    xbmcplugin.addDirectoryItem(handle=__addonidint__,url=url,listitem=li, isFolder=False)
+def addLink(linkName = '', plot = '', url = '', thumbPath = '', fanartPath = '', plotoutline = '', genre = '', date = '', playable = 'true'):
+    if not xbmcvfs.exists(thumbPath):
+        thumbPath = "DefaultVideo.png"
+    if not xbmcvfs.exists(fanartPath):
+        fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
+    li = xbmcgui.ListItem(linkName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setProperty("IsPlayable", playable)
+    li.setInfo( type="Video", infoLabels={ "Title": linkName, "plot": plot, "plotoutline": plotoutline, "genre": genre, "date":date} )
+    li.setProperty( "Fanart_Image", fanartPath)
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = url, listitem = li, isFolder = False)
 
 def addDir(dirName, targetPath, thumbPath, fanartPath, description):
     if not xbmcvfs.exists(thumbPath):
@@ -83,7 +80,7 @@ def addDir(dirName, targetPath, thumbPath, fanartPath, description):
     li = xbmcgui.ListItem(dirName, iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setInfo( type="Video", infoLabels={ "Title": dirName , "Plot": description})
     li.setProperty( "Fanart_Image", fanartPath)
-    xbmcplugin.addDirectoryItem(handle = __addonidint__ ,url = u, listitem = li, isFolder = True)
+    xbmcplugin.addDirectoryItem(handle = __addonidint__ , url = u, listitem = li, isFolder = True)
 
 def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = ''):
     thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
@@ -154,8 +151,6 @@ def getMissingExtras():
     if downloadFile(__artBaseURL__ + "repolist.txt", os.path.join(__addondir__, 'repolist.txt')):
         for availableExtra in open(os.path.join(__addondir__, 'repolist.txt')).readlines():
             extraType = availableExtra.split('/', 1)[0]
-            if extraType == 'events':
-                extraType = 'thumbs'
             extraFilename = availableExtra.split('/', 1)[1].strip()
             if not xbmcvfs.exists(os.path.join(__addondir__, extraType, extraFilename)):
                 downloadFile(__artBaseURL__ + availableExtra, os.path.join(__addondir__, extraType, extraFilename))
