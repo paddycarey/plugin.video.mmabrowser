@@ -219,10 +219,10 @@ if (__name__ == "__main__"):
         if __addon__.getSetting("checkMissingExtras") == 'true':
             getMissingExtras()
         ## populate main menu
-        addDir("Browse by: Organisation", "/browsebyorganisation/", "", "", "Browse a list of all MMA Promotions in your library.")
-        addDir("Browse by: Fighter", "/browsebyfighter/", "", "", "Browse a list of all fighters in your library")
-        addDir("All Events", "/allevents/", "", "", "Browse a list of all fighters in your library")
-        addDir("Search", "/search/", "", "", "Search all items in your library")
+        addDir("Browse by: Organisation", "/browsebyorganisation/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Browse a list of all MMA Promotions in your library.")
+        addDir("Browse by: Fighter", "/browsebyfighter/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Browse a list of all fighters in your library")
+        addDir("All Events", "/allevents/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Browse a list of all fighters in your library")
+        addDir("Search", "/search/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Search all items in your library")
     else:
         if path.startswith("/browsebyorganisation"):
             log("path:%s" % path)
