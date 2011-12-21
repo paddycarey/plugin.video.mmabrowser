@@ -146,7 +146,7 @@ def getEvent(eventID):
 
 if (__name__ == "__main__"):
 
-    xbmcplugin.setContent(__addonidint__, 'movies') 
+    xbmcplugin.setContent(__addonidint__, 'tvshows') 
 
     ## parse plugin arguments
     params = get_params()
