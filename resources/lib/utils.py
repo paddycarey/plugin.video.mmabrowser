@@ -62,8 +62,8 @@ def getUniq(seq):
 
 def addLink(name, descr, url, iconimage, fanart='', fallbackFanart=''):
     if not xbmcvfs.exists(iconimage):
-        iconimage=''
-    li = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
+        iconimage="DefaultVideo.png"
+    li = xbmcgui.ListItem(name, iconImage=iconimage)
     li.setProperty("IsPlayable", "true")
     li.setInfo( type="Video", infoLabels={ "Title": name , "plot": descr, "plotoutline": descr.replace('\n','')} )
     if xbmcvfs.exists(fanart):
