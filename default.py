@@ -201,6 +201,8 @@ if (__name__ == "__main__"):
 
     ## check path and generate desired list
     if path == "/":
+        if __addon__.getSetting("checkMissingExtras") == 'true':
+            getMissingExtras()
         ## populate main menu
         addDir("Browse by: Organisation", "/browsebyorganisation/", "", "", "Browse a list of all MMA Promotions in your library.")
         addDir("Browse by: Fighter", "/browsebyfighter/", "", "", "Browse a list of all fighters in your library")

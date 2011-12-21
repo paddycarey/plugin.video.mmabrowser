@@ -150,6 +150,16 @@ def addPromotion(promotionName):
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
+def getMissingExtras():
+    if downloadFile(__artBaseURL__ + "repolist.txt", os.path.join(__addondir__, 'repolist.txt')):
+        for availableExtra in open(os.path.join(__addondir__, 'repolist.txt')).readlines():
+            extraType = availableExtra.split('/', 1)[0]
+            if extraType == 'events':
+                extraType = 'thumbs'
+            extraFilename = availableExtra.split('/', 1)[1].strip()
+            if not xbmcvfs.exists(os.path.join(__addondir__, extraType, extraFilename)):
+                downloadFile(__artBaseURL__ + availableExtra, os.path.join(__addondir__, extraType, extraFilename))
+
 # This function raises a keyboard for user input
 def getUserInput(title = "Input", default="", hidden=False):
     result = None
