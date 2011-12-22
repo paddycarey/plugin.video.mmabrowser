@@ -1,0 +1,9 @@
+[B]0.0.1[/B]
+- Initial alpha version
+- Added support for scraping fight data from sherdog.com
+- Added ability to browse events by organisation
+- Added ability to browse events by fighter
+- Added ability to browse all events
+- Added search functionality
+- Download missing artwork/metadata when available
+- Use posters or banners depending on settings
