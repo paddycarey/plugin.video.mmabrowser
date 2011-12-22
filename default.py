@@ -137,7 +137,7 @@ def getEvent(eventID):
                         vidFile['title'] = os.path.splitext(vidFileName)[0].lstrip('0123456789. ')
                     else:
                         vidFile['title'] = vidFileName
-                    if vidFile['ext'] in ['.mkv', '.mp4', '.flv', '.avi', '.iso', '.mpg']:
+                    if vidFile['ext'] in ['.mkv', '.mp4', '.flv', '.avi', '.iso', '.mpg', '.ts']:
                         fileList.append(vidFile)
                     else:
                         log('File ignored: %s' % vidFile['path'])
