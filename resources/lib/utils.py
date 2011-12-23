@@ -184,9 +184,10 @@ def downloadFile(url, filePath):
         dlFile.close()
         response.close()
     except:
-        xbmcvfs.delete(filePath)
-        log('Unable to download: %s' % url)
-        return False
+        if xbmcvfs.exists(filePath):
+            xbmcvfs.delete(filePath)
+            log('Unable to download: %s' % url)
+            return False
     else:
         log("Downloaded: %s" % url)
         return True
