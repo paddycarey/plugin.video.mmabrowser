@@ -70,7 +70,8 @@ def allEvents():
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
+                fightList = getFightersByEvent(event[0])
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
 
 def browseByOrganisation():
     log('Browsing: Organisations')
@@ -81,10 +82,12 @@ def browseByOrganisation():
 def getEventsByOrganisation(organisation):
     log('Listing all events for: %s' % organisation)
     cur.execute("SELECT eventID, title, promotion, date, venue, city FROM events WHERE promotion='%s' ORDER BY date" % organisation)
-    for event in cur.fetchall():
+    events = cur.fetchall()
+    for event in events:
         for x in libraryList:
             if event[0] == x['ID']:
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
+                fightList = getFightersByEvent(event[0])
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
 
 def browseByFighter():
 
@@ -98,7 +101,26 @@ def getEventsByFighter(fighterID):
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
+                fightList = getFightersByEvent(event[0])
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
+
+def getFightersByEvent(eventID):
+    cur.execute("SELECT fightID, fighter1, fighter2 FROM fights WHERE eventID='%s' ORDER BY fightID" % eventID)
+    fightList = []
+    fightListProcessed = []
+    while True:
+        fight = cur.fetchone()
+        if fight == None:
+            break
+        fightList.append(fight)
+    for fNum, fighter1, fighter2 in fightList:
+        cur.execute("SELECT name FROM fighters WHERE fighterID='%s'" % fighter1)
+        f1 = cur.fetchone()
+        cur.execute("SELECT name FROM fighters WHERE fighterID='%s'" % fighter2)
+        f2 = cur.fetchone()
+        fight = (fNum, f1[0], f2[0])
+        fightListProcessed.append(fight)
+    return fightListProcessed
 
 def searchAll():
     searchStr = getUserInput(title = "Search MMA Library")
@@ -107,7 +129,8 @@ def searchAll():
     for event in cur.fetchall():
         for x in libraryList:
             if event[0] == x['ID']:
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5])
+                fightList = getFightersByEvent(event[0])
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
     cur.execute("SELECT DISTINCT * FROM fighters WHERE (fighterID LIKE '%s' OR name LIKE '%s' OR nickname LIKE '%s' OR association LIKE '%s' OR city LIKE '%s' OR country LIKE '%s') ORDER BY name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
     for fighter in cur.fetchall():
         addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10])

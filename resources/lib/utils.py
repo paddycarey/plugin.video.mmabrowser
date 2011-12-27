@@ -82,7 +82,7 @@ def addDir(dirName, targetPath, thumbPath, fanartPath, description):
     li.setProperty( "Fanart_Image", fanartPath)
     xbmcplugin.addDirectoryItem(handle = __addonidint__ , url = u, listitem = li, isFolder = True)
 
-def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = ''):
+def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = '', fighterList = ''):
     thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
     if not xbmcvfs.exists(thumbPath):
         thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % eventPromotion.replace(' ', ''))
@@ -99,9 +99,16 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     except IOError:
         description = outline
     log("Adding: Event: %s: %s" % (eventDate, eventTitle))
+    fightList = ''
+    castList = []
+    for fNum, fighter1, fighter2 in fighterList:
+        log('Adding fighters: %s vs. %s' % (fighter1, fighter2))
+        fightList = fightList + "%s vs. %s\n" % (fighter1, fighter2)
+        castList.append("%s vs. %s\n" % (fighter1, fighter2))
+    description = description + '\n\n' + str(fightList)
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
     li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
+    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": castList, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
