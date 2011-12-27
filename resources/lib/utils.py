@@ -102,7 +102,6 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     fightList = ''
     castList = []
     for fNum, fighter1, fighter2 in fighterList:
-        log('Adding fighters: %s vs. %s' % (fighter1, fighter2))
         fightList = fightList + "%s vs. %s\n" % (fighter1, fighter2)
         castList.append("%s vs. %s\n" % (fighter1, fighter2))
     description = description + '\n\n' + str(fightList)
