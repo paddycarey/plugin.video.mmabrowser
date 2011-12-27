@@ -45,9 +45,12 @@ def scanLibrary(scriptPath, libraryPath):
                     event['ID'] = open(pathIdFile).read()
                     event['ID'] = event['ID'].replace('\n', '')
                     event['path'] = x[0]
-                    log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
-                    library.append(event)
-                    cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+                    if not event['ID'] == '':
+                        log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
+                        library.append(event)
+                        cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+                    else:
+                        log('Event ID file found but was empty : %s' % event['path'])
                     break
         storageDB.commit()
     else:
