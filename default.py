@@ -167,8 +167,12 @@ def getEvent(eventID):
                         fileList.append(vidFile)
                     else:
                         log('File ignored: %s' % vidFile['path'])
-            for vidFile in sorted(fileList, key=lambda k: k['filename']):
-                addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = 'MMA')
+            if len(fileList) == 1:
+                xbmc.Player().play(fileList[0]['path'])
+                sys.exit(0)
+            else:
+                for vidFile in sorted(fileList, key=lambda k: k['filename']):
+                    addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = 'MMA')
 
 if (__name__ == "__main__"):
 
