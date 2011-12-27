@@ -221,28 +221,3 @@ def getHtml(url):
     else:
         log('Retrieved URL: %s' % url)
         return data
-        
-def getArtwork(promotionName=None, eventID=None):
-    eventThumb = eventID + '-poster.jpg'
-    eventThumbPath = os.path.join(__thumbDir__, eventThumb)
-    if not xbmcvfs.exists(eventThumbPath):
-        thumbUrl = __artBaseURL__ + 'events/' + eventThumb
-        downloadFile(thumbUrl, eventThumbPath)
-
-    eventFanart = eventID + '-fanart.jpg'
-    eventFanartPath = os.path.join(__thumbDir__, eventFanart)
-    if not xbmcvfs.exists(eventFanartPath):
-        fanartUrl = __artBaseURL__ + 'events/' + eventFanart
-        downloadFile(fanartUrl, eventFanartPath)
-
-    promotionThumb = promotionName.replace(' ', '') + '-poster.jpg'
-    promotionThumbPath = os.path.join(__promotionDir__, promotionThumb)
-    if not xbmcvfs.exists(promotionThumbPath):
-        fanartUrl = __artBaseURL__ + 'promotions/' + promotionThumb
-        downloadFile(fanartUrl, promotionThumbPath)
-
-    promotionFanart = promotionName.replace(' ', '') + '-fanart.jpg'
-    promotionFanartPath = os.path.join(__promotionDir__, promotionFanart)
-    if not xbmcvfs.exists(promotionFanartPath):
-        fanartUrl = __artBaseURL__ + 'promotions/' + promotionFanart
-        downloadFile(fanartUrl, promotionFanartPath)

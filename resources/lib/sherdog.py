@@ -88,8 +88,6 @@ def getEventDetails(sherdogEventID):
     except:
         pass
 
-    getArtwork(event['promotion'], event['ID'])
-
     log('###### Finished getting event details #####')
     return event
 
