@@ -37,14 +37,20 @@ def scanLibrary(scriptPath, libraryPath):
         cur.execute("CREATE TABLE library(ID TEXT, path TEXT)")
         library = []
         idFiles = ['sherdogEventID', 'sherdogEventID.nfo']
+        dirList = []
         for x in os.walk(libraryPath):
+            dirList.append(x[0])
+        dirCount = 0
+        for x in dirList:
+            dirCount = dirCount + 1
+            dialog.update(int((dirCount / float(len(dirList))) * 100), "Scanning MMA Library for event ID files", x)
             for idFile in idFiles:
-                pathIdFile = os.path.join(x[0], idFile)
+                pathIdFile = os.path.join(x, idFile)
                 if xbmcvfs.exists(pathIdFile):
                     event = {}
                     event['ID'] = open(pathIdFile).read()
                     event['ID'] = event['ID'].replace('\n', '')
-                    event['path'] = x[0]
+                    event['path'] = x
                     if not event['ID'] == '':
                         log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
                         library.append(event)
@@ -198,6 +204,9 @@ if (__name__ == "__main__"):
     storageDB = sqlite3.connect(storageDBPath)
     cur = storageDB.cursor()
 
+    dialog = xbmcgui.DialogProgress()
+    dialog.create(__addonname__, "MMA Browser", "Loading")
+
     ## retrieve current list of events in libraryPath
     libraryList = scanLibrary(path, __addon__.getSetting("libraryPath"))
 
@@ -220,12 +229,16 @@ if (__name__ == "__main__"):
         cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
         __addon__.setSetting(id="forceFullRescan", value='false')
     ## for every new event in library retrieve details from sherdog.com
+    cur.execute("SELECT DISTINCT eventID FROM events")
+    storedIDs = cur.fetchall()
+    libItemCount = 0
     for libraryItem in libraryList:
+        libItemCount = libItemCount + 1
+        dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Checking for event details in database", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
         scannedID = unicode(libraryItem['ID'])
-        cur.execute("SELECT DISTINCT eventID FROM events")
-        storedIDs = cur.fetchall()
         if not (scannedID,) in storedIDs:
             try:
+                dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
                 event = getEventDetails(libraryItem['ID'])
                 cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
                 for fight in event['fights']:
@@ -234,6 +247,7 @@ if (__name__ == "__main__"):
                     fighters = cur.fetchall()
                     for fighter in [fight['fighter1'], fight['fighter2']]:
                         if not (fighter,) in fighters:
+                            dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
                             fighterDetails = getFighterDetails(fighter)
                             cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
                     storageDB.commit()
@@ -242,7 +256,10 @@ if (__name__ == "__main__"):
                 log('Error adding event to database: %s' % libraryItem['ID'])
                 log('Rolling back database to clean state')
                 storageDB.rollback()
+                dialog.close()
                 sys.exit(1)
+
+    dialog.close()
 
     ## check path and generate desired list
     if path == "/":
