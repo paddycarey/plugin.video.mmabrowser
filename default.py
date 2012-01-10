@@ -26,6 +26,7 @@ __addonpath__         = __addon__.getAddonInfo('path')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'events')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
+__fightDir__          = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 
 def scanLibrary(scriptPath, libraryPath):
@@ -196,7 +197,7 @@ if (__name__ == "__main__"):
     log('Script path: %s' % path)
 
     ## create directories needed for script operation
-    for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __promotionDir__]:
+    for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
         xbmcvfs.mkdir(neededDir)
 
     ## initialise persistent storage
@@ -204,8 +205,9 @@ if (__name__ == "__main__"):
     storageDB = sqlite3.connect(storageDBPath)
     cur = storageDB.cursor()
 
-    dialog = xbmcgui.DialogProgress()
-    dialog.create(__addonname__, "MMA Browser", "Loading")
+    if path == '/':
+        dialog = xbmcgui.DialogProgress()
+        dialog.create(__addonname__, "MMA Browser", "Loading")
 
     ## retrieve current list of events in libraryPath
     libraryList = scanLibrary(path, __addon__.getSetting("libraryPath"))
@@ -234,7 +236,6 @@ if (__name__ == "__main__"):
     libItemCount = 0
     for libraryItem in libraryList:
         libItemCount = libItemCount + 1
-        dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Checking for event details in database", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
         scannedID = unicode(libraryItem['ID'])
         if not (scannedID,) in storedIDs:
             try:
@@ -259,7 +260,8 @@ if (__name__ == "__main__"):
                 dialog.close()
                 sys.exit(1)
 
-    dialog.close()
+    if path == '/':
+        dialog.close()
 
     ## check path and generate desired list
     if path == "/":

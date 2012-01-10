@@ -24,6 +24,7 @@ __addonpath__         = __addon__.getAddonInfo('path')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'events')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
+__fightDir__        = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 __artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
 
