@@ -51,6 +51,14 @@ def getAllFighters():
         result = cur.fetchall()
     return result
 
+def getFightCount(fighterID):
+    log('Retrieving details of all fighters from database')
+    with storageDB:
+        cur = storageDB.cursor()
+        cur.execute("SELECT COUNT(*) FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s')" % (fighterID, fighterID))
+        result = cur.fetchone()
+    return result[0]
+
 def getEventsByFighter(fighterID):
     log('Retrieving details of all events from database for fighter: %s' % fighterID)
     with storageDB:

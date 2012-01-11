@@ -109,7 +109,7 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
-def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = ''):
+def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = '', fightCount = ''):
     fighterThumb = fighterID + '.jpg'
     thumbPath = os.path.join(__fighterDir__, fighterThumb)
     if not xbmcvfs.exists(thumbPath):
@@ -119,7 +119,7 @@ def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAs
     description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay), fighterCity, fighterCountry)
     log("Adding: Fighter: %s" % fighterName)
     u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
-    li=xbmcgui.ListItem(label = fighterName, iconImage = thumbPath, thumbnailImage = thumbPath)
+    li=xbmcgui.ListItem(label = '%s (%s)' % (fighterName, fightCount), iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "plotoutline": outline} )
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
