@@ -11,14 +11,6 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 
-## create directories needed for script operation
-for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
-        xbmcvfs.mkdir(neededDir)
-
-import resources.lib.databaseops as dbops
-import resources.lib.library as library
-from resources.lib.utils import *
-
 ### get addon info
 __addon__             = xbmcaddon.Addon()
 __addonid__           = __addon__.getAddonInfo('id')
@@ -33,6 +25,15 @@ __thumbDir__          = os.path.join(__addondir__, 'events')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __fightDir__          = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
+
+## create directories needed for script operation
+for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
+        xbmcvfs.mkdir(neededDir)
+
+import resources.lib.databaseops as dbops
+import resources.lib.library as library
+from resources.lib.utils import *
+
 
 def allEvents():
     for event in dbops.getAllEvents():
