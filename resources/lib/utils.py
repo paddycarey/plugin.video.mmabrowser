@@ -102,10 +102,10 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     log("Adding: Event: %s: %s" % (eventDate, eventTitle))
     fightList = ''
     castList = []
-    for fNum, fighter1, fighter2 in fighterList:
-        fightList = fightList + "%s vs. %s\n" % (fighter1, fighter2)
-        castList.append("%s vs. %s\n" % (fighter1, fighter2))
-    description = description + '\n\n' + str(fightList)
+    description = description + '\n\n'
+    for fight in fighterList:
+        description = description + str(fight)
+        castList.append(fight)
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
     li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": castList, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
