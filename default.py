@@ -37,7 +37,7 @@ from resources.lib.utils import *
 
 def allEvents():
     for event in dbops.getAllEvents():
-        for x in libraryList:
+        for x in library.loadLibrary():
             if event[0] == x['ID']:
                 fightList = dbops.getFightersByEvent(event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
@@ -50,7 +50,7 @@ def browseByOrganisation():
 def getEventsByOrganisation(organisation):
     log('Listing all events for: %s' % organisation)
     for event in dbops.getEventsByPromotion(organisation):
-        for x in libraryList:
+        for x in library.loadLibrary():
             if event[0] == x['ID']:
                 fightList = dbops.getFightersByEvent(event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
@@ -61,7 +61,7 @@ def browseByFighter():
 
 def getEventsByFighter(fighterID):
     for event in dbops.getEventsByFighter(fighterID):
-        for x in libraryList:
+        for x in library.loadLibrary():
             if event[0] == x['ID']:
                 fightList = dbops.getFightersByEvent(event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
@@ -69,7 +69,7 @@ def getEventsByFighter(fighterID):
 def searchAll():
     searchStr = getUserInput(title = "Search MMA Library")
     for event in dbops.searchEvents(searchStr):
-        for x in libraryList:
+        for x in library.loadLibrary():
             if event[0] == x['ID']:
                 fightList = getFightersByEvent(event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList)
@@ -78,7 +78,7 @@ def searchAll():
 
 def getEvent(eventID):
     event = dbops.getEvent(eventID)
-    for x in libraryList:
+    for x in library.loadLibrary():
         if event[0] == x['ID']:
             thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % x['ID'])
             if not xbmcvfs.exists(thumbPath):
@@ -127,9 +127,6 @@ if (__name__ == "__main__"):
         path = "/"
 
     log('Script path: %s' % path)
-
-    # load library from DB
-    libraryList = library.loadLibrary()
 
     ## check path and generate desired list
     if path == "/":
