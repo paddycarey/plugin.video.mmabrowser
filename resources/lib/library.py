@@ -51,21 +51,22 @@ def scanLibrary():
             dirList.append(x[0])
         dirCount = 0
         for x in dirList:
-            dirCount = dirCount + 1
-            dialog.update(int((dirCount / float(len(dirList))) * 100), "Scanning MMA Library for event ID files", x)
-            for idFile in idFiles:
-                pathIdFile = os.path.join(x, idFile)
-                if xbmcvfs.exists(pathIdFile):
-                    event = {}
-                    event['ID'] = open(pathIdFile).read()
-                    event['ID'] = event['ID'].replace('\n', '')
-                    event['path'] = x
-                    if not event['ID'] == '':
-                        log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
-                        cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
-                    else:
-                        log('Event ID file found but was empty : %s' % event['path'])
-                    break
+            if not dialog.iscanceled():
+                dirCount = dirCount + 1
+                dialog.update(int((dirCount / float(len(dirList))) * 100), "Scanning MMA Library for event ID files", x)
+                for idFile in idFiles:
+                    pathIdFile = os.path.join(x, idFile)
+                    if xbmcvfs.exists(pathIdFile):
+                        event = {}
+                        event['ID'] = open(pathIdFile).read()
+                        event['ID'] = event['ID'].replace('\n', '')
+                        event['path'] = x
+                        if not event['ID'] == '':
+                            log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
+                            cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+                        else:
+                            log('Event ID file found but was empty : %s' % event['path'])
+                        break
     dialog.close()
 
 def loadLibrary():
@@ -111,27 +112,28 @@ def getMissingData():
         libItemCount = 0
         libraryList = loadLibrary()
         for libraryItem in libraryList:
-            libItemCount = libItemCount + 1
-            scannedID = unicode(libraryItem['ID'])
-            if not (scannedID,) in storedIDs:
-                try:
-                    dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
-                    event = getEventDetails(libraryItem['ID'])
-                    cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
-                    for fight in event['fights']:
-                        cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
-                        cur.execute("SELECT fighterID from fighters")
-                        fighters = cur.fetchall()
-                        for fighter in [fight['fighter1'], fight['fighter2']]:
-                            if not (fighter,) in fighters:
-                                dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
-                                fighterDetails = getFighterDetails(fighter)
-                                cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
-                        storageDB.commit()
-                except:
-                    print sys.exc_info()
-                    log('Error adding event to database: %s' % libraryItem['ID'])
-                    log('Rolling back database to clean state')
-                    storageDB.rollback()
-                    sys.exit(1)
+            if not dialog.iscanceled():
+                libItemCount = libItemCount + 1
+                scannedID = unicode(libraryItem['ID'])
+                if not (scannedID,) in storedIDs:
+                    try:
+                        dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
+                        event = getEventDetails(libraryItem['ID'])
+                        cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
+                        for fight in event['fights']:
+                            cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
+                            cur.execute("SELECT fighterID from fighters")
+                            fighters = cur.fetchall()
+                            for fighter in [fight['fighter1'], fight['fighter2']]:
+                                if not (fighter,) in fighters:
+                                    dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
+                                    fighterDetails = getFighterDetails(fighter)
+                                    cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
+                            storageDB.commit()
+                    except:
+                        print sys.exc_info()
+                        log('Error adding event to database: %s' % libraryItem['ID'])
+                        log('Rolling back database to clean state')
+                        storageDB.rollback()
+                        sys.exit(1)
     dialog.close()
