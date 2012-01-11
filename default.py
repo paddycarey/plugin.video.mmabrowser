@@ -17,22 +17,9 @@ from resources.lib.navigation import *
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
-__addonid__           = __addon__.getAddonInfo('id')
 __addonidint__        = int(sys.argv[1])
-__addonname__         = __addon__.getAddonInfo('name')
-__author__            = __addon__.getAddonInfo('author')
-__version__           = __addon__.getAddonInfo('version')
-__localize__          = __addon__.getLocalizedString
-__addonpath__         = __addon__.getAddonInfo('path')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-__thumbDir__          = os.path.join(__addondir__, 'events')
-__fighterDir__        = os.path.join(__addondir__, 'fighters')
-__fightDir__          = os.path.join(__addondir__, 'fights')
-__promotionDir__      = os.path.join(__addondir__, 'promotions')
 
-## create directories needed for script operation
-for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
-        xbmcvfs.mkdir(neededDir)
 
 xbmcplugin.setContent(__addonidint__, 'tvshows') 
 

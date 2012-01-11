@@ -12,9 +12,6 @@ from resources.lib.utils import log
 __addon__             = xbmcaddon.Addon()
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 
-if not xbmcvfs.exists(__addondir__):
-    xbmcvfs.mkdir(__addondir__)
-
 ## initialise database
 storageDBPath = os.path.join(__addondir__, 'storage.db')
 storageDB = sqlite3.connect(storageDBPath)

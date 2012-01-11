@@ -28,7 +28,9 @@ __fightDir__        = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 __artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
 
-
+## create directories needed for script operation
+for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
+        xbmcvfs.mkdir(neededDir)
 
 ### adjust default timeout to stop script hanging
 timeout = 20
