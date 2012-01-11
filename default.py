@@ -11,6 +11,10 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 
+## create directories needed for script operation
+for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
+        xbmcvfs.mkdir(neededDir)
+
 import resources.lib.databaseops as dbops
 import resources.lib.library as library
 from resources.lib.utils import *
@@ -122,10 +126,6 @@ if (__name__ == "__main__"):
         path = "/"
 
     log('Script path: %s' % path)
-
-    ## create directories needed for script operation
-    for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
-        xbmcvfs.mkdir(neededDir)
 
     # load library from DB
     libraryList = library.loadLibrary()
