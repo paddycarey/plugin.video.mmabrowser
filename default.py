@@ -63,6 +63,8 @@ elif path.startswith("/browsebyorganisation"):
         browseByOrganisation()
     else:
         ## populate list of events for a given organisation
+        xbmcplugin.addSortMethod(__addonidint__, 3)
+        xbmcplugin.addSortMethod(__addonidint__, 23)
         getEventsByOrganisation(organisation.lstrip('/'))
 elif path.startswith("/browsebyfighter"):
     log("path:%s" % path)
@@ -76,6 +78,8 @@ elif path.startswith("/browsebyfighter"):
         getEventsByFighter(fighterID.lstrip('/'))
 elif path == "/allevents":
     ## populate list of all events
+    xbmcplugin.addSortMethod(__addonidint__, 3)
+    xbmcplugin.addSortMethod(__addonidint__, 23)
     allEvents()
 elif path == "/search":
     ## populate list of all events
