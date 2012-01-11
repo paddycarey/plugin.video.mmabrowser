@@ -4,12 +4,16 @@ import os
 import sqlite3
 import xbmc
 import xbmcaddon
+import xbmcvfs
 
 from resources.lib.utils import log
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+
+if not xbmcvfs.exists(__addondir__):
+    xbmcvfs.mkdir(__addondir__)
 
 ## initialise database
 storageDBPath = os.path.join(__addondir__, 'storage.db')
@@ -89,11 +93,11 @@ def getFightersByEvent(eventID):
     prevFightID = ''
     for halfFight in result:
         if not halfFight[0] == prevFightID:
-            fight = halfFight[1]
+            fight = "%.2d. %s" % (int(halfFight[0]), halfFight[1])
             prevFightID = halfFight[0]
         else:
-            fight = fight + ' vs. %s\n' % halfFight[1]
+            fight = fight + ' vs. %s' % halfFight[1]
             prevFightID = halfFight[0]
-            fightList.append(fight)
-    return fightList
+            fightList.append(str(fight))
+    return sorted(fightList)
 

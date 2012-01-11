@@ -102,13 +102,10 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     log("Adding: Event: %s: %s" % (eventDate, eventTitle))
     fightList = ''
     castList = []
-    description = description + '\n\n'
-    for fight in fighterList:
-        description = description + str(fight)
-        castList.append(fight)
+    description = description + '\n\n' + '\n'.join(fighterList)
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
     li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": castList, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
+    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": fighterList, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
