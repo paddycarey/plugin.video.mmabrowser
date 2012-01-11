@@ -1,3 +1,7 @@
+[B]0.0.2[/B]
+- Major refactor
+- Fixed bug with dialog
+
 [B]0.0.1[/B]
 - Initial alpha version
 - Added support for scraping fight data from sherdog.com
