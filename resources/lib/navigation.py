@@ -102,7 +102,7 @@ def getEvent(eventID):
             description = description + '\n\n' + '\n'.join(fighterList)
             fileList = getFileList(x['path'])
             if len(fileList) == 1:
-                li=xbmcgui.ListItem(label = "[%s] %s" % (event[3], event[1]), iconImage = thumbPath, thumbnailImage = thumbPath)
+                li=xbmcgui.ListItem(label = event[1], iconImage = thumbPath, thumbnailImage = thumbPath)
                 li.setInfo( type="Video", infoLabels={ "title": event[1], "plot": description, "cast": fighterList, "genre": 'MMA', "date": event[3], "premiered": event[3], "tvshowtitle": event[2]} )
                 xbmc.Player().play(fileList[0]['path'], li)
                 sys.exit(0)
