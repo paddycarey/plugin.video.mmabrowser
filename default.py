@@ -47,11 +47,13 @@ elif path.startswith("/browsebyorganisation"):
     log("organisation:%s" % organisation)
     if organisation == '':
         ## populate list of organisations
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
         browseByOrganisation()
     else:
         ## populate list of events for a given organisation
-        xbmcplugin.addSortMethod(__addonidint__, 3)
-        xbmcplugin.addSortMethod(__addonidint__, 23)
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
         getEventsByOrganisation(organisation.lstrip('/'))
 elif path.startswith("/browsebyfighter"):
     log("path:%s" % path)
@@ -59,14 +61,19 @@ elif path.startswith("/browsebyfighter"):
     log("fighterID:%s" % fighterID)
     if fighterID == '':
         ## populate list of fighters
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
         browseByFighter()
     else:
         ## populate list of all events a given fighter has fought in
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
+        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
         getEventsByFighter(fighterID.lstrip('/'))
 elif path == "/allevents":
     ## populate list of all events
-    xbmcplugin.addSortMethod(__addonidint__, 3)
-    xbmcplugin.addSortMethod(__addonidint__, 23)
+    xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
+    xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
     allEvents()
 elif path == "/search":
     ## populate list of all events

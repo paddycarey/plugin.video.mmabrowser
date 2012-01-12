@@ -85,7 +85,7 @@ def addDir(dirName, targetPath, thumbPath, fanartPath, description):
     li.setProperty( "Fanart_Image", fanartPath)
     xbmcplugin.addDirectoryItem(handle = __addonidint__ , url = u, listitem = li, isFolder = True)
 
-def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = '', fighterList = ''):
+def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = '', fighterList = '', totalEvents = 0):
     thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
     if not xbmcvfs.exists(thumbPath):
         thumbPath = os.path.join(__promotionDir__, '%s-poster.jpg' % eventPromotion.replace(' ', ''))
@@ -107,26 +107,27 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     description = description + '\n\n' + '\n'.join(fighterList)
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
     li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": fighterList, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]) } )
+    li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": fighterList, "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]), "premiered": eventDate, "tvshowtitle": eventPromotion} )
     li.setProperty( "Fanart_Image", fanartPath )
-    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True, totalItems = int(totalEvents))
 
-def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = '', fightCount = ''):
+def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = '', fightCount = '', totalFighters = ''):
     fighterThumb = fighterID + '.jpg'
     thumbPath = os.path.join(__fighterDir__, fighterThumb)
     if not xbmcvfs.exists(thumbPath):
         thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
     fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
-    outline = '%s "%s"' % (fighterName, fighterNickname)
     description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay), fighterCity, fighterCountry)
     log("Adding: Fighter: %s" % fighterName)
     u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
     li=xbmcgui.ListItem(label = '%s (%s)' % (fighterName, fightCount), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "plotoutline": outline} )
+    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "tvshowtitle": fighterName, "episode": fightCount, "premiered": "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay)} )
     li.setProperty( "Fanart_Image", fanartPath )
-    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
+    li.setProperty( "TotalEpisodes", str(fightCount) )
+    li.setProperty( "TotalSeasons", '1' )
+    xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True, totalItems = int(totalFighters))
 
-def addPromotion(promotionName):
+def addPromotion(promotionName, eventCount):
     
     if __addon__.getSetting("useBanners") == 'true':
         promotionThumb = promotionName + '-banner.jpg'
@@ -148,9 +149,11 @@ def addPromotion(promotionName):
 
     log("Adding: Promotion: %s" % promotionName)
     u = sys.argv[0] + "?path=/browsebyorganisation/%s" % promotionName
-    li=xbmcgui.ListItem(label = promotionName, iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": promotionName, "plot": description, "genre": "MMA"} )
+    li=xbmcgui.ListItem(label = "%s (%s)" % (promotionName, eventCount), iconImage = thumbPath, thumbnailImage = thumbPath)
+    li.setInfo( type="Video", infoLabels={ "Title": promotionName, "Plot": description, "Genre": "MMA", "TVShowTitle": promotionName, "episode": eventCount} )
     li.setProperty( "Fanart_Image", fanartPath )
+    li.setProperty( "TotalEpisodes", str(eventCount) )
+    li.setProperty( "TotalSeasons", '1' )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
 def getMissingExtras():
