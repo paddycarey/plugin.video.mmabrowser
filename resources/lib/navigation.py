@@ -139,7 +139,7 @@ def getFileList(rootDir):
         vidFile = {}
         vidFile['path'] = vidFileName
         if __addon__.getSetting("cleanFilenames") == 'true':
-            vidFile['title'] = os.path.splitext(os.path.split(vidFileName)[1])[0].lstrip('0123456789. ')
+            vidFile['title'] = os.path.splitext(os.path.splitext(os.path.split(vidFileName)[1])[0])[0].lstrip('0123456789. ')
         else:
             vidFile['title'] = os.path.split(vidFileName)[1]
         if os.path.splitext(vidFileName)[1] in xbmc.getSupportedMedia('video').split('|'):
