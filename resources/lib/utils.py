@@ -70,7 +70,7 @@ def addLink(linkName = '', plot = '', url = '', thumbPath = '', fanartPath = '',
         fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
     li = xbmcgui.ListItem(linkName, iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setProperty("IsPlayable", playable)
-    li.setInfo( type="Video", infoLabels={ "Title": linkName, "plot": plot, "plotoutline": plotoutline, "genre": genre, "date":date} )
+    li.setInfo( type="Video", infoLabels={ "Title": linkName, "TVShowTitle": linkName, "plot": plot, "genre": genre, "date":date} )
     li.setProperty( "Fanart_Image", fanartPath)
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = url, listitem = li, isFolder = False)
 

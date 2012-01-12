@@ -98,24 +98,53 @@ def getEvent(eventID):
                 description = open(os.path.join(__thumbDir__, '%s-description.txt' % event[0])).read()
             except IOError:
                 description = outline
-            fileList = []
-            for root, dirs, files in os.walk(x['path']):
-                for vidFileName in files:
-                    vidFile = {}
-                    vidFile['filename'] = vidFileName
-                    vidFile['ext'] = os.path.splitext(vidFileName)[1]
-                    vidFile['path'] = os.path.join(root, vidFileName)
-                    if __addon__.getSetting("cleanFilenames") == 'true':
-                        vidFile['title'] = os.path.splitext(vidFileName)[0].lstrip('0123456789. ')
-                    else:
-                        vidFile['title'] = vidFileName
-                    if vidFile['ext'] in ['.mkv', '.mp4', '.flv', '.avi', '.iso', '.mpg', '.ts']:
-                        fileList.append(vidFile)
-                    else:
-                        log('File ignored: %s' % vidFile['path'])
+            fighterList = dbops.getFightersByEvent(eventID)
+            description = description + '\n\n' + '\n'.join(fighterList)
+            fileList = getFileList(x['path'])
             if len(fileList) == 1:
-                xbmc.Player().play(fileList[0]['path'])
+                li=xbmcgui.ListItem(label = "[%s] %s" % (event[3], event[1]), iconImage = thumbPath, thumbnailImage = thumbPath)
+                li.setInfo( type="Video", infoLabels={ "title": event[1], "plot": description, "cast": fighterList, "genre": 'MMA', "date": event[3], "premiered": event[3], "tvshowtitle": event[2]} )
+                xbmc.Player().play(fileList[0]['path'], li)
                 sys.exit(0)
             else:
-                for vidFile in sorted(fileList, key=lambda k: k['filename']):
+                for vidFile in fileList:
                     addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = 'MMA')
+
+def getFileList(rootDir):
+
+    stackCounter = 1
+    activeStack = ''
+    fileList = []
+    for root, dirs, files in os.walk(rootDir):
+            for filename in sorted(files):
+                stackPart = 'cd' + str(stackCounter)
+                if stackPart in filename:
+                        if stackCounter == 1:
+                            activeStack = 'stack://' + os.path.join(root, filename)
+                            stackCounter = 2
+                        else:
+                            activeStack = activeStack + ' , ' + os.path.join(root, filename)
+                            stackCounter = stackCounter + 1
+                else:
+                    if not activeStack == '':
+                        if not activeStack in fileList:
+                            fileList.append(activeStack)
+                            stackCounter = 1
+                            activeStack = ''
+                    else:
+                        if not os.path.join(root, filename) in fileList:
+                            fileList.append(os.path.join(root, filename))
+    vidFiles = []
+    for vidFileName in sorted(fileList):
+        vidFile = {}
+        vidFile['path'] = vidFileName
+        if __addon__.getSetting("cleanFilenames") == 'true':
+            vidFile['title'] = os.path.splitext(os.path.split(vidFileName)[1])[0].lstrip('0123456789. ')
+        else:
+            vidFile['title'] = os.path.split(vidFileName)[1]
+        if os.path.splitext(vidFileName)[1] in xbmc.getSupportedMedia('video').split('|'):
+            vidFiles.append(vidFile)
+        else:
+            log('File ignored: %s' % vidFile['path'])
+    return vidFiles
+    
