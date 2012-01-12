@@ -44,7 +44,7 @@ def getAllFighters():
     log('Retrieving details of all fighters from database')
     with storageDB:
         cur = storageDB.cursor()
-        cur.execute("SELECT DISTINCT * FROM fighters ORDER BY name")
+        cur.execute("SELECT DISTINCT fighters.*, COUNT(*) AS cnt FROM fighters INNER JOIN fights ON (fights.fighter1=fighters.fighterID OR fights.fighter2=fighters.fighterID) GROUP BY fighters.fighterID ORDER BY fighters.name")
         result = cur.fetchall()
     return result
 
@@ -63,14 +63,6 @@ def getEventCount(promotion):
         cur.execute("SELECT COUNT(DISTINCT eventID) FROM events WHERE promotion='%s'" % promotion)
         result = cur.fetchone()
     return result[0]
-
-def getEventsByFighter(fighterID):
-    log('Retrieving details of all events from database for fighter: %s' % fighterID)
-    with storageDB:
-        cur = storageDB.cursor()
-        cur.execute("SELECT DISTINCT events.eventID, events.title, events.promotion, events.date, events.venue, events.city FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE (fighter1='%s' OR fighter2='%s') ORDER BY date" % (fighterID, fighterID))
-        result = cur.fetchall()
-    return result
 
 def getEvent(eventID):
     log('Retrieving details of event from database: %s' % eventID)
@@ -92,7 +84,7 @@ def searchFighters(searchStr):
     log("Searching database for fighters: %s" % searchStr)
     with storageDB:
         cur = storageDB.cursor()
-        cur.execute("SELECT DISTINCT * FROM fighters WHERE (fighterID LIKE '%s' OR name LIKE '%s' OR nickname LIKE '%s' OR association LIKE '%s' OR city LIKE '%s' OR country LIKE '%s') ORDER BY name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+        cur.execute("SELECT DISTINCT fighters.*, COUNT(*) AS cnt FROM fighters INNER JOIN fights ON (fights.fighter1=fighters.fighterID OR fights.fighter2=fighters.fighterID) WHERE (fighters.fighterID LIKE '%s' OR fighters.name LIKE '%s' OR fighters.nickname LIKE '%s' OR fighters.association LIKE '%s' OR fighters.city LIKE '%s' OR fighters.country LIKE '%s') GROUP BY fighters.fighterID ORDER BY fighters.name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
         result = cur.fetchall()
     return result
 

@@ -121,7 +121,7 @@ def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAs
     log("Adding: Fighter: %s" % fighterName)
     u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
     li=xbmcgui.ListItem(label = '%s (%s)' % (fighterName, fightCount), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "tvshowtitle": fighterName, "episode": fightCount, "premiered": "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay)} )
+    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "tvshowtitle": fighterName, "episode": fightCount, "aired": "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay)} )
     li.setProperty( "Fanart_Image", fanartPath )
     li.setProperty( "TotalEpisodes", str(fightCount) )
     li.setProperty( "TotalSeasons", '1' )

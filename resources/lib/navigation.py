@@ -54,7 +54,7 @@ def browseByFighter():
     dbList = dbops.getAllFighters()
     totalFighters = len(dbList)
     for fighter in dbList:
-        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10], dbops.getFightCount(fighter[0]), totalFighters)
+        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10], fighter[11], totalFighters)
 
 def getEventsByFighter(fighterID):
     log('Listing all events for: %s' % fighterID)
@@ -80,7 +80,7 @@ def searchAll():
                 fightList = dbops.getFightersByEvent(event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalListItems)
     for fighter in dbList2:
-        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10], dbops.getFightCount(fighter[0]), totalListItems)
+        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10], fighter[11], totalListItems)
 
 def getEvent(eventID):
     event = dbops.getEvent(eventID)
