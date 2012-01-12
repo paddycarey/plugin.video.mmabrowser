@@ -157,12 +157,22 @@ def addPromotion(promotionName, eventCount):
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
 def getMissingExtras():
+    dialog = xbmcgui.DialogProgress()
+    dialog.create(__addonname__, "MMA Browser", "Loading")
     if downloadFile(__artBaseURL__ + "repolist.txt", os.path.join(__addondir__, 'repolist.txt')):
+        availableExtraList = []
         for availableExtra in open(os.path.join(__addondir__, 'repolist.txt')).readlines():
+            availableExtraList.append(availableExtra)
+        totalExtras = len(availableExtraList)
+        extraCount = 0
+        for availableExtra in availableExtraList:
+            extraCount = extraCount + 1
             extraType = availableExtra.split('/', 1)[0]
             extraFilename = availableExtra.split('/', 1)[1].strip()
+            dialog.update(int((extraCount / float(totalExtras)) * 100), "Downloading artwork/metadata", extraFilename)
             if not xbmcvfs.exists(os.path.join(__addondir__, extraType, extraFilename)):
                 downloadFile(__artBaseURL__ + availableExtra, os.path.join(__addondir__, extraType, extraFilename))
+    dialog.close()
 
 # This function raises a keyboard for user input
 def getUserInput(title = "Input", default="", hidden=False):
