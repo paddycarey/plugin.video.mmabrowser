@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import simplejson
 import socket
 import sqlite3
 import sys
@@ -36,6 +37,27 @@ forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
 storageDBPath = os.path.join(__addondir__, 'storage.db')
 storageDB = sqlite3.connect(storageDBPath)
 
+def getDirList(path):
+    dirList = []
+    currentLevelDirList = [path]
+    while True:
+        prevLevelDirList = []
+        if len(currentLevelDirList) > 0:
+            for dirName in currentLevelDirList:
+                prevLevelDirList.append(dirName)
+                dirList.append(dirName)
+            currentLevelDirList = []
+        else:
+            break
+        for dirName in prevLevelDirList:
+            json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } } , "id" : 1 }' % dirName.encode('utf-8'))
+            jsonobject = simplejson.loads(json_response)
+            if jsonobject['result']['files']:
+                for item in jsonobject['result']['files']:
+                    if item['filetype'] == 'directory':
+                        currentLevelDirList.append(item['file'])
+    return dirList
+
 def scanLibrary():
     dialog = xbmcgui.DialogProgress()
     dialog.create(__addonname__, "MMA Browser", "Loading")
@@ -47,8 +69,7 @@ def scanLibrary():
         cur.execute("CREATE TABLE library(ID TEXT, path TEXT)")
         idFiles = ['sherdogEventID', 'sherdogEventID.nfo']
         dirList = []
-        for x in os.walk(__addon__.getSetting("libraryPath")):
-            dirList.append(x[0])
+        dirList = getDirList(__addon__.getSetting("libraryPath"))
         dirCount = 0
         for x in dirList:
             if not dialog.iscanceled():
