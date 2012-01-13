@@ -116,7 +116,7 @@ def getVideoList(rootDir):
     activeStack = ''
     fileList = []
     for filename in library.getFileList(rootDir):
-        stackPart = '.cd' + str(stackCounter)
+        stackPart = 'cd' + str(stackCounter)
         if stackPart in filename:
                 if stackCounter == 1:
                     activeStack = 'stack://' + filename
@@ -133,6 +133,9 @@ def getVideoList(rootDir):
             else:
                 if not filename in fileList:
                     fileList.append(filename)
+    if not activeStack == '':
+        if not activeStack in fileList:
+            fileList.append(activeStack)
     vidFiles = []
     for vidFileName in sorted(fileList):
         vidFile = {}

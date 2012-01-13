@@ -56,6 +56,7 @@ def getDirList(path):
                 for item in jsonobject['result']['files']:
                     if item['filetype'] == 'directory':
                         currentLevelDirList.append(item['file'])
+    print dirList
     return dirList
 
 def getFileList(path):
@@ -68,6 +69,7 @@ def getFileList(path):
             for item in jsonobject['result']['files']:
                 if item['filetype'] == 'file':
                     fileList.append(item['file'])
+    print fileList
     return fileList
 
 def scanLibrary():
