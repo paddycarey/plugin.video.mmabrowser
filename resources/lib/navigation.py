@@ -103,12 +103,12 @@ def getEvent(eventID):
             fileList = getFileList(x['path'])
             if len(fileList) == 1:
                 li=xbmcgui.ListItem(label = event[1], iconImage = thumbPath, thumbnailImage = thumbPath)
-                li.setInfo( type="Video", infoLabels={ "title": event[1], "plot": description, "cast": fighterList, "genre": 'MMA', "date": event[3], "premiered": event[3], "tvshowtitle": event[2]} )
+                li.setInfo( type="Video", infoLabels={ "title": event[1], "plot": description, "cast": fighterList, "genre": event[2], "date": event[3], "premiered": event[3], "tvshowtitle": event[2]} )
                 xbmc.Player().play(fileList[0]['path'], li)
                 sys.exit(0)
             else:
                 for vidFile in fileList:
-                    addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = 'MMA')
+                    addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = event[2])
 
 def getFileList(rootDir):
 
@@ -117,7 +117,7 @@ def getFileList(rootDir):
     fileList = []
     for root, dirs, files in os.walk(rootDir):
             for filename in sorted(files):
-                stackPart = 'cd' + str(stackCounter)
+                stackPart = '.cd' + str(stackCounter)
                 if stackPart in filename:
                         if stackCounter == 1:
                             activeStack = 'stack://' + os.path.join(root, filename)
