@@ -62,7 +62,7 @@ def getFileList(path):
     fileList = []
     dirList = getDirList(path)
     for dirName in dirList:
-        json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } } , "id" : 1 }' % dirName.encode('utf-8'))
+        json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } , "media" : "video" } , "id" : 1 }' % dirName.encode('utf-8'))
         jsonobject = simplejson.loads(json_response)
         if jsonobject['result']['files']:
             for item in jsonobject['result']['files']:
