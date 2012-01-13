@@ -1,3 +1,6 @@
+[B]0.0.4[/B]
+- Stacking fix
+
 [B]0.0.3[/B]
 - Add ability to sort directory listings by various criteria
 - Added event counts for fighters/promotions
