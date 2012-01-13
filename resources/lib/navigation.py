@@ -132,7 +132,7 @@ def getVideoList(rootDir):
                     activeStack = ''
             else:
                 if not filename in fileList:
-                    fileList.append(os.path.join(root, filename))
+                    fileList.append(filename)
     vidFiles = []
     for vidFileName in sorted(fileList):
         vidFile = {}
