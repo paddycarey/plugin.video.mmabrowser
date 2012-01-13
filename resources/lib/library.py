@@ -110,7 +110,15 @@ def scanLibrary():
                     pathIdFile = os.path.join(x, idFile)
                     if xbmcvfs.exists(pathIdFile):
                         event = {}
-                        event['ID'] = open(pathIdFile).read()
+                        try:
+                            event['ID'] = open(pathIdFile).read()
+                        except IOError:
+                            tmpID = os.path.join(__addondir__, 'tmpID')
+                            if xbmcvfs.copy(pathIdFile, tmpID):
+                                event['ID'] = open(tmpID).read()
+                                xbmcvfs.delete(tmpID)
+                            else:
+                                event['ID'] = ''
                         event['ID'] = event['ID'].replace('\n', '')
                         event['path'] = x
                         if not event['ID'] == '':

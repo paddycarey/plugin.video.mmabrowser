@@ -149,7 +149,7 @@ def getVideoList(rootDir):
                 vidFile['title'] = os.path.splitext(vidFile['title'])[0]
         else:
             vidFile['title'] = os.path.split(vidFileName)[1]
-        if os.path.splitext(vidFileName)[1] in xbmc.getSupportedMedia('video').split('|'):
+        if os.path.splitext(vidFileName)[1].lower() in xbmc.getSupportedMedia('video').split('|'):
             vidFiles.append(vidFile)
         else:
             log('File ignored: %s' % vidFile['path'])
