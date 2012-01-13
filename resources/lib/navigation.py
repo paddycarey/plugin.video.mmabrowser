@@ -119,6 +119,9 @@ def getVideoList(rootDir):
         stackPart = 'cd' + str(stackCounter)
         if stackPart in filename:
                 if stackCounter == 1:
+                    if not activeStack == '':
+                        if not activeStack in fileList:
+                            fileList.append(activeStack)
                     activeStack = 'stack://' + filename
                     stackCounter = 2
                 else:
