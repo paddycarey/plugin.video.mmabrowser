@@ -100,7 +100,7 @@ def getEvent(eventID):
                 description = outline
             fighterList = dbops.getFightersByEvent(eventID)
             description = description + '\n\n' + '\n'.join(fighterList)
-            fileList = getFileList(x['path'])
+            fileList = getVideoList(x['path'])
             if len(fileList) == 1:
                 li=xbmcgui.ListItem(label = event[1], iconImage = thumbPath, thumbnailImage = thumbPath)
                 li.setInfo( type="Video", infoLabels={ "title": event[1], "plot": description, "cast": fighterList, "genre": event[2], "date": event[3], "premiered": event[3], "tvshowtitle": event[2]} )
@@ -110,30 +110,29 @@ def getEvent(eventID):
                 for vidFile in fileList:
                     addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = event[2])
 
-def getFileList(rootDir):
+def getVideoList(rootDir):
 
     stackCounter = 1
     activeStack = ''
     fileList = []
-    for root, dirs, files in os.walk(rootDir):
-            for filename in sorted(files):
-                stackPart = '.cd' + str(stackCounter)
-                if stackPart in filename:
-                        if stackCounter == 1:
-                            activeStack = 'stack://' + os.path.join(root, filename)
-                            stackCounter = 2
-                        else:
-                            activeStack = activeStack + ' , ' + os.path.join(root, filename)
-                            stackCounter = stackCounter + 1
+    for filename in library.getFileList(rootDir):
+        stackPart = '.cd' + str(stackCounter)
+        if stackPart in filename:
+                if stackCounter == 1:
+                    activeStack = 'stack://' + filename
+                    stackCounter = 2
                 else:
-                    if not activeStack == '':
-                        if not activeStack in fileList:
-                            fileList.append(activeStack)
-                            stackCounter = 1
-                            activeStack = ''
-                    else:
-                        if not os.path.join(root, filename) in fileList:
-                            fileList.append(os.path.join(root, filename))
+                    activeStack = activeStack + ' , ' + filename
+                    stackCounter = stackCounter + 1
+        else:
+            if not activeStack == '':
+                if not activeStack in fileList:
+                    fileList.append(activeStack)
+                    stackCounter = 1
+                    activeStack = ''
+            else:
+                if not filename in fileList:
+                    fileList.append(os.path.join(root, filename))
     vidFiles = []
     for vidFileName in sorted(fileList):
         vidFile = {}

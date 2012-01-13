@@ -56,7 +56,21 @@ def getDirList(path):
                 for item in jsonobject['result']['files']:
                     if item['filetype'] == 'directory':
                         currentLevelDirList.append(item['file'])
+    print dirList
+    xbmc.sleep(10000)
     return dirList
+
+def getFileList(path):
+    fileList = []
+    dirList = getDirList(path)
+    for dirName in dirList:
+        json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } } , "id" : 1 }' % dirName.encode('utf-8'))
+        jsonobject = simplejson.loads(json_response)
+        if jsonobject['result']['files']:
+            for item in jsonobject['result']['files']:
+                if item['filetype'] == 'file':
+                    fileList.append(item['file'])
+    return fileList
 
 def scanLibrary():
     dialog = xbmcgui.DialogProgress()

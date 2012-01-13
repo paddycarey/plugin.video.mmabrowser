@@ -3,6 +3,7 @@
 - Added event counts for fighters/promotions
 - Added fight numbers to fight list to allow easier sorting
 - Cleaned up dialogs to give better indication of progress
+- Plugin now works with remote shares
 
 [B]0.0.2[/B]
 - Major refactor
