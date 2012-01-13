@@ -39,7 +39,7 @@ if path == "/":
     library.scanLibrary()
     library.getMissingData()
     if __addon__.getSetting("checkMissingExtras") == 'true':
-        getMissingExtras()
+        library.getMissingExtras()
     mainMenu()
 elif path.startswith("/browsebyorganisation"):
     log("path:%s" % path)

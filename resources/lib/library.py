@@ -30,6 +30,7 @@ __thumbDir__          = os.path.join(__addondir__, 'events')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __fightDir__          = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
+__artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
 
 forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
 
@@ -69,6 +70,24 @@ def getFileList(path):
                 if item['filetype'] == 'file':
                     fileList.append(item['file'])
     return fileList
+
+def getMissingExtras():
+    dialog = xbmcgui.DialogProgress()
+    dialog.create(__addonname__, "MMA Browser", "Loading")
+    if downloadFile(__artBaseURL__ + "repolist.txt", os.path.join(__addondir__, 'repolist.txt')):
+        availableExtraList = []
+        for availableExtra in open(os.path.join(__addondir__, 'repolist.txt')).readlines():
+            availableExtraList.append(availableExtra)
+        totalExtras = len(availableExtraList)
+        extraCount = 0
+        for availableExtra in availableExtraList:
+            extraCount = extraCount + 1
+            extraType = availableExtra.split('/', 1)[0]
+            extraFilename = availableExtra.split('/', 1)[1].strip()
+            dialog.update(int((extraCount / float(totalExtras)) * 100), "Downloading artwork/metadata", extraFilename)
+            if not xbmcvfs.exists(os.path.join(__addondir__, extraType, extraFilename)):
+                downloadFile(__artBaseURL__ + availableExtra, os.path.join(__addondir__, extraType, extraFilename))
+    dialog.close()
 
 def scanLibrary():
     dialog = xbmcgui.DialogProgress()

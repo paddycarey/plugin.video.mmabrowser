@@ -24,6 +24,14 @@ def getAllEvents():
         result = cur.fetchall()
     return result
 
+def getAllEventsAndPromotions():
+    log('Retrieving details of all eventIDs from database')
+    with storageDB:
+        cur = storageDB.cursor()
+        cur.execute("SELECT DISTINCT eventID FROM events UNION SELECT DISTINCT promotion FROM events")
+        result = cur.fetchall()
+    return result
+
 def getAllPromotions():
     log('Retrieving list of all promotions from database')
     with storageDB:
