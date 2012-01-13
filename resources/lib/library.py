@@ -56,8 +56,6 @@ def getDirList(path):
                 for item in jsonobject['result']['files']:
                     if item['filetype'] == 'directory':
                         currentLevelDirList.append(item['file'])
-    print dirList
-    xbmc.sleep(10000)
     return dirList
 
 def getFileList(path):
