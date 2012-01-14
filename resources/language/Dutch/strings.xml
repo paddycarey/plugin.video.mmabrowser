@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<strings>
+        <string id="32001">Algemeen</string>
+        <string id="32002">MMA bibliotheek locatie</string>
+        <string id="32003">Gebruik vaandels in plaats van posters voor Promotie miniaturen</string>
+        <string id="32006">Bestandsnamen opschonen (zie README voor info)</string>
+        <string id="32004">Controleer op ontbrekende artwork/info bij uitvoeren</string>
+        <string id="32005">Forceer volledige opniew scannen bij volgende uitvoering</string>
+</strings>
