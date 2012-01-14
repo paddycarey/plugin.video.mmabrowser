@@ -58,6 +58,7 @@ def getDirList(path):
                 for item in jsonobject['result']['files']:
                     if item['filetype'] == 'directory':
                         currentLevelDirList.append(item['file'])
+                        log('Found directory: %s' % item['file'])
     return dirList
 
 def getFileList(path):
@@ -71,6 +72,7 @@ def getFileList(path):
             for item in jsonobject['result']['files']:
                 if item['filetype'] == 'file':
                     fileList.append(item['file'])
+                    log('Found video: %s' % item['file'])
     return fileList
 
 def getMissingExtras():
