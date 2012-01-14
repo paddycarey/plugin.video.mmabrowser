@@ -14,10 +14,15 @@
   </extension>
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Downloads stats from Sherdog.com for use in XBMC</summary>
+    <summary lang="nl">Download statistieken van Sherdog.com voor gebruik in XBMC</summary>
     <description lang="en">
         Downloads stats from Sherdog.com for use in XBMC and allows to filter/search your MMA events by a variety of criteria.
 	</description>
-    <disclaimer>All stats are taken from sherdog.com</disclaimer>
+    <description lang="nl">
+        Download statistieken van Sherdog.com voor gebruik in XBMC en maakt het mogelijk om de MMA events te filteren/zoeken door middel van diverse criteria.
+	</description>
+    <disclaimer lang="en">All stats are taken from sherdog.com</disclaimer>
+    <disclaimer lang="nl">Alle statitieken komen van sherdog.com</disclaimer>
     <platform>all</platform>
   </extension>
 </addon>
