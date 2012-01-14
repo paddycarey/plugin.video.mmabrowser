@@ -69,18 +69,19 @@ def getEventsByFighter(fighterID):
 def searchAll():
     log('Searching MMA Library')
     searchStr = getUserInput(title = "Search MMA Library")
-    dbList = dbops.searchEvents(searchStr)
-    totalEvents = len(dbList)
-    dbList2 = dbops.searchFighters(searchStr)
-    totalFighters = len(dbList2)
-    totalListItems = totalEvents + totalFighters
-    for event in dbList:
-        for x in library.loadLibrary():
-            if event[0] == x['ID']:
-                fightList = dbops.getFightersByEvent(event[0])
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalListItems)
-    for fighter in dbList2:
-        addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10], fighter[11], totalListItems)
+    if searchStr:
+        dbList = dbops.searchEvents(searchStr)
+        totalEvents = len(dbList)
+        dbList2 = dbops.searchFighters(searchStr)
+        totalFighters = len(dbList2)
+        totalListItems = totalEvents + totalFighters
+        for event in dbList:
+            for x in library.loadLibrary():
+                if event[0] == x['ID']:
+                    fightList = dbops.getFightersByEvent(event[0])
+                    addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalListItems)
+        for fighter in dbList2:
+            addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[9], fighter[10], fighter[11], totalListItems)
 
 def getEvent(eventID):
     event = dbops.getEvent(eventID)

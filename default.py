@@ -33,6 +33,7 @@ except:
     path = "/"
 
 log('Script path: %s' % path)
+log('Library path: %s' % __addon__.getSetting("libraryPath"))
 
 ## check path and generate desired list
 if path == "/":
