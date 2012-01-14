@@ -1,5 +1,7 @@
 [B]0.0.4[/B]
 - Stacking fix
+- Fix for windows directories
+- Don't crash when search string is empty
 
 [B]0.0.3[/B]
 - Add ability to sort directory listings by various criteria
