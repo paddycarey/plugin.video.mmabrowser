@@ -2,7 +2,7 @@
 <addon
 	id="plugin.video.mmabrowser"
 	name="MMA Browser"
-	version="0.0.4"
+	version="0.0.5"
 	provider-name="paddycarey"
     >
   <requires>

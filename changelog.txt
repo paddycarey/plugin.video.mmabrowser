@@ -1,3 +1,9 @@
+[B]0.0.5[/B]
+- Don't show sample files in library
+- Fix for when launched from main menu instead of addon
+- Skip instead of exit when error encountered adding an event
+- Added Dutch translation (Thanks Martijn)
+
 [B]0.0.4[/B]
 - Stacking fix
 - Fix for windows directories
