@@ -198,5 +198,4 @@ def getMissingData():
                         log('Error adding event to database: %s' % libraryItem['ID'])
                         log('Rolling back database to clean state')
                         storageDB.rollback()
-                        sys.exit(1)
     dialog.close()
