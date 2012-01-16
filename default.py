@@ -63,7 +63,6 @@ elif path.startswith("/browsebyfighter"):
     if fighterID == '':
         ## populate list of fighters
         xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
-        xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
         xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
         browseByFighter()
     else:
