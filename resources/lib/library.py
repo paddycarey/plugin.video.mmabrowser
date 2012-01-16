@@ -38,6 +38,8 @@ forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
 storageDBPath = os.path.join(__addondir__, 'storage.db')
 storageDB = sqlite3.connect(storageDBPath)
 
+dialog = xbmcgui.DialogProgress()
+
 def getDirList(path):
     dirList = []
     currentLevelDirList = [path]
@@ -75,8 +77,6 @@ def getFileList(path):
     return fileList
 
 def getMissingExtras():
-    dialog = xbmcgui.DialogProgress()
-    dialog.create(__addonname__, "MMA Browser", "Loading")
     if downloadFile(__artBaseURL__ + "repolist.txt", os.path.join(__addondir__, 'repolist.txt')):
         availableExtraList = []
         for availableExtra in open(os.path.join(__addondir__, 'repolist.txt')).readlines():
@@ -90,11 +90,8 @@ def getMissingExtras():
             dialog.update(int((extraCount / float(totalExtras)) * 100), "Downloading artwork/metadata", extraFilename)
             if not xbmcvfs.exists(os.path.join(__addondir__, extraType, extraFilename)):
                 downloadFile(__artBaseURL__ + availableExtra, os.path.join(__addondir__, extraType, extraFilename))
-    dialog.close()
 
 def scanLibrary():
-    dialog = xbmcgui.DialogProgress()
-    dialog.create(__addonname__, "MMA Browser", "Loading")
     ## scan libraryPath for directories containing sherdogEventID files
     log('Scanning library for event IDs/paths')
     with storageDB:
@@ -130,7 +127,6 @@ def scanLibrary():
                         else:
                             log('Event ID file found but was empty : %s' % event['path'])
                         break
-    dialog.close()
 
 def loadLibrary():
     with storageDB:
@@ -145,8 +141,6 @@ def loadLibrary():
     return library
 
 def getMissingData():
-    dialog = xbmcgui.DialogProgress()
-    dialog.create(__addonname__, "MMA Browser", "Loading")
     with storageDB:
         cur = storageDB.cursor()
         try:
@@ -198,4 +192,3 @@ def getMissingData():
                         log('Error adding event to database: %s' % libraryItem['ID'])
                         log('Rolling back database to clean state')
                         storageDB.rollback()
-    dialog.close()

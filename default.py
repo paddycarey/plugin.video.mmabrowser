@@ -19,6 +19,7 @@ from resources.lib.navigation import *
 __addon__             = xbmcaddon.Addon()
 __addonidint__        = int(sys.argv[1])
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+__addonname__         = __addon__.getAddonInfo('name')
 
 
 xbmcplugin.setContent(__addonidint__, 'tvshows') 
@@ -37,10 +38,13 @@ log('Library path: %s' % __addon__.getSetting("libraryPath"))
 
 ## check path and generate desired list
 if path == "/":
+    xbmc.sleep(3000)
+    library.dialog.create(__addonname__, "MMA Browser", "Loading")
     library.scanLibrary()
     library.getMissingData()
     if __addon__.getSetting("checkMissingExtras") == 'true':
         library.getMissingExtras()
+    library.dialog.close()
     mainMenu()
 elif path.startswith("/browsebyorganisation"):
     log("path:%s" % path)
