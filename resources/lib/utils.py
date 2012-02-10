@@ -101,8 +101,6 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     except IOError:
         description = outline
     log("Adding: Event: %s: %s" % (eventDate, eventTitle))
-    fightList = ''
-    castList = []
     description = description + '\n\n' + '\n'.join(fighterList)
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
     li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
@@ -210,14 +208,3 @@ def log(txt='', severity=xbmc.LOGDEBUG):
         except:
             message = ('Artwork Downloader: UnicodeEncodeError')
             xbmc.log(msg=message, level=xbmc.LOGWARNING)
-
-def getHtml(url):
-    try:
-        client = urlopen(url)
-        data = client.read()
-        client.close()
-    except:
-        log('Error getting data from: %s' % url)
-    else:
-        log('Retrieved URL: %s' % url)
-        return data

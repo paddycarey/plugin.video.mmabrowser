@@ -13,7 +13,7 @@ import xbmcplugin
 import xbmcvfs
 
 import resources.lib.databaseops as dbops
-from resources.lib.utils import log
+from resources.lib.utils import *
 from resources.lib.sherdog import *
 
 ### get addon info
