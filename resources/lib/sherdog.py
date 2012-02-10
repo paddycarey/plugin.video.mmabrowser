@@ -290,3 +290,73 @@ def getFighterDetails(fighterID):
     
     # return scraped details
     return fighterDetails
+
+
+if __name__ == '__main__':
+    
+    """Run some tests to ensure scraper is working correctly"""
+    
+    # import modules necessary for testing
+    import unittest
+    
+    # define class to perform testing
+    class TestSherdogScraper(unittest.TestCase):
+
+        def test_fighter(self):
+            
+            # get fighter details for 2326
+            f = getFighterDetails(2326)
+            
+            # check results of scraper run
+            self.assertEqual(f['name'], 'Mirko Filipovic')
+            self.assertEqual(f['nickName'], 'Cro Cop')
+            self.assertEqual(f['association'], 'Cro Cop Squad Gym')
+            self.assertEqual(f['height'], '6\'2" (188cm)')
+            self.assertEqual(f['weight'], '227lbs (103kg)')
+            self.assertEqual(f['birthDate'], '1974-09-10')
+            self.assertEqual(f['city'], 'Zagreb')
+            self.assertEqual(f['country'], 'Croatia')
+        
+        def test_event(self):
+            
+            # get event details for 18346
+            e = getEventDetails(18346)
+            
+            # check results of scraper run
+            self.assertEqual(e['title'], 'UFC 141 - Lesnar vs. Overeem')
+            self.assertEqual(e['venue'], 'MGM Grand Garden Arena')
+            self.assertEqual(e['city'], 'Las Vegas, Nevada, United States')
+            self.assertEqual(e['date'], '2011-12-30')
+            self.assertEqual(e['fights'][0]['fighter1'], '25981')
+            self.assertEqual(e['fights'][0]['fighter2'], '5185')
+            self.assertEqual(e['fights'][0]['fighter1'], e['fights'][0]['winner'])
+            self.assertEqual(e['fights'][1]['fighter1'], '24765')
+            self.assertEqual(e['fights'][1]['fighter2'], '16555')
+            self.assertEqual(e['fights'][1]['fighter1'], e['fights'][1]['winner'])
+            self.assertEqual(e['fights'][2]['fighter1'], '16374')
+            self.assertEqual(e['fights'][2]['fighter2'], '573')
+            self.assertEqual(e['fights'][2]['fighter1'], e['fights'][2]['winner'])
+            self.assertEqual(e['fights'][3]['fighter1'], '26070')
+            self.assertEqual(e['fights'][3]['fighter2'], '7540')
+            self.assertEqual(e['fights'][3]['fighter1'], e['fights'][3]['winner'])
+            self.assertEqual(e['fights'][4]['fighter1'], '11884')
+            self.assertEqual(e['fights'][4]['fighter2'], '10380')
+            self.assertEqual(e['fights'][4]['fighter1'], e['fights'][4]['winner'])
+            self.assertEqual(e['fights'][5]['fighter1'], '48046')
+            self.assertEqual(e['fights'][5]['fighter2'], '5778')
+            self.assertEqual(e['fights'][5]['fighter1'], e['fights'][5]['winner'])
+            self.assertEqual(e['fights'][6]['fighter1'], '26162')
+            self.assertEqual(e['fights'][6]['fighter2'], '435')
+            self.assertEqual(e['fights'][6]['fighter1'], e['fights'][6]['winner'])
+            self.assertEqual(e['fights'][7]['fighter1'], '24539')
+            self.assertEqual(e['fights'][7]['fighter2'], '4865')
+            self.assertEqual(e['fights'][7]['fighter1'], e['fights'][7]['winner'])
+            self.assertEqual(e['fights'][8]['fighter1'], '11451')
+            self.assertEqual(e['fights'][8]['fighter2'], '15105')
+            self.assertEqual(e['fights'][8]['fighter1'], e['fights'][8]['winner'])
+            self.assertEqual(e['fights'][9]['fighter1'], '461')
+            self.assertEqual(e['fights'][9]['fighter2'], '17522')
+            self.assertEqual(e['fights'][9]['fighter1'], e['fights'][9]['winner'])
+
+    # run tests
+    unittest.main()
