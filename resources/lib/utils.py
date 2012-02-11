@@ -108,17 +108,13 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True, totalItems = int(totalEvents))
 
-def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthYear = '', fighterBirthMonth = '', fighterBirthDay = '', fighterCity = '', fighterCountry = '', fightCount = '', totalFighters = ''):
-    fighterThumb = fighterID + '.jpg'
-    thumbPath = os.path.join(__fighterDir__, fighterThumb)
-    if not xbmcvfs.exists(thumbPath):
-        thumbPath = os.path.join(__addonpath__, 'resources', 'images', 'blank_fighter.jpg')
+def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthDate = '', fighterCity = '', fighterCountry = '', fightCount = '', totalFighters = '', thumbURL = ''):
     fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
-    description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay), fighterCity, fighterCountry)
+    description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, fighterBirthDate, fighterCity, fighterCountry)
     log("Adding: Fighter: %s" % fighterName)
     u = sys.argv[0] + "?path=/browsebyfighter/%s" % fighterID
-    li=xbmcgui.ListItem(label = '%s (%s)' % (fighterName, fightCount), iconImage = thumbPath, thumbnailImage = thumbPath)
-    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "tvshowtitle": fighterName, "episode": fightCount, "aired": "%s-%s-%s" % (fighterBirthYear, fighterBirthMonth, fighterBirthDay)} )
+    li=xbmcgui.ListItem(label = '%s (%s)' % (fighterName, fightCount), iconImage = thumbURL, thumbnailImage = thumbURL)
+    li.setInfo( type="Video", infoLabels={ "title": fighterName, "plot": description, "tvshowtitle": fighterName, "episode": fightCount, "aired": fighterBirthDate} )
     li.setProperty( "Fanart_Image", fanartPath )
     li.setProperty( "TotalEpisodes", str(fightCount) )
     li.setProperty( "TotalSeasons", '1' )

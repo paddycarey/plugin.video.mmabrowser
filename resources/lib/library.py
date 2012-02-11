@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import simplejson
 import socket
 import sqlite3
 import sys
@@ -11,6 +10,12 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 import xbmcvfs
+
+# Use json instead of simplejson when python v2.7 or greater
+if sys.version_info < (2, 7):
+     import json as simplejson
+else:
+     import simplejson
 
 import resources.lib.databaseops as dbops
 from resources.lib.utils import *
@@ -159,7 +164,7 @@ def getMissingData():
             cur.execute("DROP TABLE IF EXISTS fights")
             cur.execute("CREATE TABLE fights(eventID TEXT, fightID TEXT, fighter1 TEXT, fighter2 TEXT, winner TEXT, result TEXT, round TEXT, time TEXT)")
             cur.execute("DROP TABLE IF EXISTS fighters")
-            cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthYear TEXT, birthMonth TEXT, birthDay TEXT, city TEXT, country TEXT)")
+            cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
             __addon__.setSetting(id="forceFullRescan", value='false')
 
     
@@ -185,7 +190,7 @@ def getMissingData():
                                 if not (fighter,) in fighters:
                                     dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
                                     fighterDetails = getFighterDetails(fighter)
-                                    cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthYear'], fighterDetails['birthMonth'], fighterDetails['birthDay'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', '')))
+                                    cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthDate'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', ''), fighterDetails['thumbUrl']))
                             storageDB.commit()
                     except:
                         print sys.exc_info()

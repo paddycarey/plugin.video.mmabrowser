@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""sherdog.py: A set of functions to scrape event and fighter data from sherdog.com"""
+"""A set of functions to scrape event and fighter data from sherdog.com"""
 
 __author__      = 'Patrick Carey'
 __copyright__   = 'Copyright 2012 Patrick Carey'
@@ -12,7 +12,7 @@ __version__     = '0.0.1'
 from BeautifulSoup import BeautifulSoup
 from urllib2 import urlopen
 
-# declare necessary constants for module operation
+# declare necessary constants for script operation
 __fightFinderURL__ = 'http://www.sherdog.com/fightfinder/fightfinder.asp?%s'
 
 
