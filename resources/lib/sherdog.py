@@ -95,13 +95,11 @@ def getEventDetails(eventID):
     # retrieve html and initialise beautifulsoup object for parsing
     soup = BeautifulSoup(getHtml(url))
     
-    pageTitle = soup.html.head.title.string
-    pageTitleArr = pageTitle.split(' - ', 1)	
     # find and store event title in dict
-    eventDetails['title'] = pageTitle
-    
+    eventDetails['title'] = soup.html.head.title.string
+
     # find and store promotion name in dict
-    eventDetails['promotion'] = pageTitleArr[0]
+    eventDetails['promotion'] = soup.find("div", {"class" : "header"}).h2.a.strong.string
     
     # find events date
     tempDate = soup.find("div", {"class" : "authors_info"}).find("span", {"class" : "date"}).string
