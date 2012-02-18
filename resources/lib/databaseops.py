@@ -13,7 +13,8 @@ __addon__             = xbmcaddon.Addon()
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 
 ## initialise database
-storageDBPath = os.path.join(__addondir__, 'storage.db')
+__dbVersion__ = 0.1
+storageDBPath = os.path.join(__addondir__, 'storage-%s.db' % __dbVersion__)
 storageDB = sqlite3.connect(storageDBPath)
 
 def getAllEvents():

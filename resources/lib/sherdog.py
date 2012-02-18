@@ -2,19 +2,24 @@
 
 """A set of functions to scrape event and fighter data from sherdog.com"""
 
-__author__      = 'Patrick Carey'
+__author__      = ['Patrick Carey', 'Jason Harmon']
 __copyright__   = 'Copyright 2012 Patrick Carey'
-__credits__     = ['Patrick Carey', 'coldbloodedtx']
+__credits__     = ['Patrick Carey', 'Jason Harmon']
 __license__     = 'GPLv2'
-__version__     = '0.0.1'
+__version__     = '0.0.2'
 
-# import modules necessary for script operation
-from BeautifulSoup import BeautifulSoup
+import os
+import collections
+import socket
+from resources.lib.utils import log
 from urllib2 import urlopen
+from BeautifulSoup import BeautifulSoup
 
 # declare necessary constants for script operation
-__fightFinderURL__ = 'http://www.sherdog.com/fightfinder/fightfinder.asp?%s'
-
+__fighterURL__ = 'http://www.sherdog.com/fighter/X-%s'
+__fighterSearchURL__ = 'http://www.sherdog.com/stats/fightfinder?weight=%s&SearchTxt=%s'
+__eventURL__ = 'http://www.sherdog.com/events/X-%s'
+__defaultTimeout__ = 60
 
 def getHtml(url):
     
@@ -28,6 +33,11 @@ def getHtml(url):
     data -- A string containing the contents to the remote page
     """
     
+    log('Retrieving url: %s' % url)
+
+    # set default timeout
+    socket.setdefaulttimeout(__defaultTimeout__)
+
     # connect to url using urlopen
     client = urlopen(url)
     
@@ -36,6 +46,8 @@ def getHtml(url):
     
     # close connection to url
     client.close()
+
+    log('Retrieved url: %s' % url)
 
     # return the retrieved data
     return data
@@ -60,13 +72,14 @@ def getEventDetails(eventID):
     venue -- Event's venue
     city -- City in which event took place
     fights -- A list containing dictionaries (fightDetails[]) with the details of each fight on the event
-    
+
     fightDetails keys:
     ID -- Fight's ID
     fighter1 -- Sherdog ID for the first fighter
     fighter2 -- Sherdog ID for the second fighter
     winner -- Sherdog ID for the winning fighter
     result -- Method of victory/Type of decision
+    referee -- Referee that presided over the fight
     round -- Round in which fight ended
     time -- Time at which final round ended
     """
@@ -78,116 +91,146 @@ def getEventDetails(eventID):
     eventDetails['ID'] = eventID
     
     # generate event url
-    urlSuffix = 'eventID=%s' % eventDetails['ID']
-    url = __fightFinderURL__ % urlSuffix
+    url = __eventURL__ % eventID
     
     # retrieve html and initialise beautifulsoup object for parsing
     soup = BeautifulSoup(getHtml(url))
     
+    pageTitle = soup.html.head.title.string
+    pageTitleArr = pageTitle.split(' - ', 1)	
     # find and store event title in dict
-    eventDetails['title'] = soup.find("div", {"class" : "Txt30Blue Bold SpacerLeft8"}).h1.string
+    eventDetails['title'] = pageTitle
     
     # find and store promotion name in dict
-    eventDetails['promotion'] = soup.find("div", {"class" : "Txt13Orange Bold SpacerLeft8"}).a.string
+    eventDetails['promotion'] = pageTitleArr[0]
     
     # find events date
-    tempDate = soup.find("div", {"class" : "Txt13White Bold SpacerLeft8"}).string
-    # get events year
+    tempDate = soup.find("div", {"class" : "authors_info"}).find("span", {"class" : "date"}).string
+    
     tempYear = tempDate.split(' ')[2]
     # declare dict to convert month names to numbers
-    months = {  'January': '01',
-                'February': '02',
-                'March': '03',
-                'April': '04',
+    months = {  'Jan': '01',
+                'Feb': '02',
+                'Mar': '03',
+                'Apr': '04',
                 'May': '05',
-                'June': '06',
-                'July': '07',
-                'August': '08',
-                'September': '09',
-                'October': '10',
-                'November': '11',
-                'December': '12' }
+                'Jun': '06',
+                'Jul': '07',
+                'Aug': '08',
+                'Sep': '09',
+                'Oct': '10',
+                'Nov': '11',
+                'Dec': '12' }
     # get events month and convert to numeric format
     tempMonth = months[tempDate.split(' ')[0]]
     # get events day
     tempDay = "%.2d" % int(tempDate.split(' ')[1].rstrip(','))
     # store event date in dict
     eventDetails['date'] = "%s-%s-%s" % (tempYear, tempMonth, tempDay)
-    
+    eventTemp = ''
     try:
         # find and store venue in dict
-        eventDetails['venue'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[0].rstrip().rstrip(',')
+        eventTemp = soup.find("span", {"class" : "author"}).findAll(text=True)[0].split("\r\n")
+        eventDetails['venue'] = eventTemp[0].lstrip().rstrip(",")
     except:
         # store blank string if no venue listed
         eventDetails['venue'] = ''
     
     try:
         # find and store city in dict
-        eventDetails['city'] = soup.find("div", {"class" : "Txt13Gray Bold SpacerLeftBottom8"}).findAll(text=True)[1].rstrip().lstrip()
+        eventDetails['city'] = eventTemp[1].lstrip().rstrip() 
     except:
         # store blank string if no city listed
         eventDetails['city'] = ''
     
     # find list of fights for event
-    table = soup.find("table", {"class" : "fight_event_card"})
+    table = soup.find("div", {"class" : "module_fight_card"})
     
     # initialise empty list to store fightDetails dicts
     eventDetails['fights'] = []
+
     
-    try:
-        # find all rows in the fights table
-        rows = table.findAll('tr')
-        
-        # set rowcount to 0
-        rowcount = 0
-        
-        # loop through all rows in fights table
-        for row in rows:
-            
-            # ignore first row in table
-            if not rowcount == 0:
-                
-                # find all columns in table
-                cols = row.findAll('td')
-                
-                # initialise empty dict to store fight details
-                fightDetails = {}
-                
-                # find and store fight ID
-                fightDetails['ID'] = cols[0].string
-                
-                # find and store ID for fighter1
-                fightDetails['fighter1'] = cols[1].a['href'].rsplit('-', 1)[1]
-                # find and store ID for fighter2
-                fightDetails['fighter2'] = cols[3].a['href'].rsplit('-', 1)[1]
-                
-                # check that fight was not a draw
-                if cols[1].findAll(text=True)[1] == 'Winner':
-                    # find and store winner ID
-                    fightDetails['winner'] = cols[1].a['href'].rsplit('-', 1)[1]
-                else:
-                    # store blank string if no winner
-                    fightDetails['winner'] = ''
-                
-                # find and store result
-                fightDetails['result'] = cols[4].string
-                
-                # find and store round in which fight ended
-                fightDetails['round'] = cols[5].string
-                
-                # find and store end time of fight
-                fightDetails['time'] = cols[6].string
-                
-                # add fightDetails dict to fights list
-                eventDetails['fights'].append(fightDetails)
-            
-            # increase rowcount by 1
-            rowcount = rowcount + 1
-            
-    except:
-        # skip silently if error encountered
-        pass
+    fightDetails = {}
+    fights = []
+    fightDetails['fighter1'] = soup.find("div", {"class" : "fighter left_side"}).a['href'].rsplit("-", 1)[1]
+    fightDetails['fighter2'] = soup.find("div", {"class" : "fighter right_side"}).a['href'].rsplit("-", 1)[1]
+
+    leftResult = ''
+    rightResult = ''
+    winner = ''
+    leftResult = soup.find("div", {"class" : "fighter left_side"}).find("span", {"class" : "final_result win"})
+    rightResult = soup.find("div", {"class" : "fighter right_side"}).find("span", {"class" : "final_result win"})
     
+    if leftResult != None and leftResult.string == 'win':
+        fightDetails['winner'] = fightDetails["fighter1"]
+    if rightResult != None and leftResult.string == 'win':
+        fightDetails['winner'] = fightDetails["fighter2"]
+    
+    tempCells =  soup.find("table", {"class" : "resume"}).findAll("td")
+    fightDetails['ID'] = int(tempCells[0].findAll(text=True)[1].strip())
+    fightDetails['result'] = tempCells[1].findAll(text=True)[1].strip()
+    fightDetails['referee'] = tempCells[2].findAll(text=True)[1].strip()
+    fightDetails['round'] = tempCells[3].findAll(text=True)[1].strip()
+    fightDetails['time'] = tempCells[4].findAll(text=True)[1].strip()
+    fights.append(fightDetails)
+
+    # find all rows in the fights table
+    rows = soup.find("div", {"class" : "content table"}).findAll("tr")
+    
+    # set rowcount to 0
+    rowcount = 0
+        
+    # loop through all rows in fights table
+    for row in rows:
+        
+        # ignore first row in table
+        if not rowcount == 0:
+            
+            # find all columns in table
+            cols = row.findAll('td')
+            
+            # initialise empty dict to store fight details
+            fightDetails = {}
+            
+            # find and store fight ID
+            fightDetails['ID'] = int(cols[0].string)
+            
+            # find and store ID for fighter1
+            fightDetails['fighter1'] = cols[1].a['href'].rsplit('-', 1)[1]
+            # find and store ID for fighter2
+            fightDetails['fighter2'] = cols[5].a['href'].rsplit('-', 1)[1]
+            
+            # check that fight was not a draw
+            win = cols[1].find("span").find(text=True)
+            if win == 'win':
+                # find and store winner ID
+                fightDetails['winner'] = fightDetails['fighter1']
+            else:
+                # store blank string if no winner
+                fightDetails['winner'] = ''
+            
+            # find and store result
+            fightDetails['result'] = cols[6].find(text=True).string
+            
+            # find and store round in which fight ended
+            fightDetails['referee'] = cols[6].find("span").string
+            
+            # find and store round in which fight ended
+            fightDetails['round'] = cols[7].string
+            
+            # find and store end time of fight
+            fightDetails['time'] = cols[8].string
+            
+            # add fightDetails dict to fights list
+            fights.append(fightDetails)
+        
+        # increase rowcount by 1
+        rowcount = rowcount + 1
+
+    sort_on = "ID"
+    sortFights = [(dict_[sort_on], dict_) for dict_ in fights]
+    sortFights.sort()
+    eventDetails['fights'] = [dict_ for (key, dict_) in sortFights]
     # return the scraped details
     return eventDetails
 
@@ -233,130 +276,39 @@ def getFighterDetails(fighterID):
     fighterDetails['ID'] = fighterID
     
     # generate fighter url
-    urlSuffix = 'fighterID=%s' % fighterDetails['ID']
-    url = __fightFinderURL__ % urlSuffix
+    url = __fighterURL__ % fighterID
     
     # retrieve html and initialise beautifulsoup object for parsing
     soup = BeautifulSoup(getHtml(url))
-    
-    # find table containing fighter details
-    table = soup.find("span", {"id" : "fighter_profile"})
-    rows = table.findAll('tr')
-    
-    # loop over each row in fighter details table
-    for row in rows:
-        
-        # get data from table cell
-        infoItem = row.findAll('td')
-        
-        # skip empty rows
-        if infoItem[0].string == None:
-            continue
-        
-        # check if row contains 'name' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Name':
-            fighterDetails['name'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-        
-        # check if row contains 'nickname' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Nick Name':
-            fighterDetails['nickName'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-        
-        # check if row contains 'association' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Association':
-            fighterDetails['association'] = infoItem[1].a.string.rstrip(' ').rstrip('\n')
-        
-        # check if row contains 'height' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Height':
-            fighterDetails['height'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-        
-        # check if row contains 'weight' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Weight':
-            fighterDetails['weight'] = infoItem[1].string.rstrip(' ').rstrip('\n')
 
-        # check if row contains 'birth date' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Birth Date':
-            fighterDetails['birthDate'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+    bio = soup.find("div", {"class" : "module bio_fighter"})	
+    fighterDetails['name'] = bio.h1.find(text=True)
+    try:
+        fighterDetails['nickName'] = bio.find("span", {"class" : "nickname"}).em.string
+    except Exception:
+        fighterDetails['nickName'] = ''
+    try:
+        fighterDetails['association'] = bio.find("span", {"class" : "item association"}).strong.string
+    except Exception:
+        fighterDetails['association'] = ''
+    try:
+        heightTemp = bio.find("span", {"class" : "item height"})
+        fighterDetails['height'] = ("%s %s" % (heightTemp.strong.string, heightTemp.findAll(text=True)[3].string)).rstrip()
+    except Exception:
+        fighterDetails['height'] = ''
+    weightTemp = bio.find("span", {"class" : "item weight"})
+    fighterDetails['weight'] = ("%s %s" % (weightTemp.strong.string, weightTemp.findAll(text=True)[3].string)).rstrip() 
+    fighterDetails['birthDate'] = bio.find("span", {"class" : "item birthday"}).findAll(text=True)[0].rsplit(":")[1].strip()
+    try:
+        birthpTemp =  bio.find("span", {"class" : "item birthplace"})
+        fighterDetails['city'] = birthpTemp.findAll(text=True)[1].strip()
+        fighterDetails['country'] = birthpTemp.strong.string
+    except Exception:
+        fighterDetails['city'] = ''
+        fighterDetails['country'] = ''
 
-        # check if row contains 'city' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'City':
-            fighterDetails['city'] = infoItem[1].string.rstrip(' ').rstrip('\n')
+    # find and store url for fighter image
+    fighterDetails['thumbUrl'] = bio.img['src']
 
-        # check if row contains 'country' and store to fighterDetails dict
-        elif infoItem[0].string.rstrip(' ').rstrip('\n') == 'Country':
-            fighterDetails['country'] = infoItem[1].string.rstrip(' ').rstrip('\n')
-        
-        # find and store url for fighter image
-        fighterDetails['thumbUrl'] = soup.find("span", {"id" : "fighter_picture"}).img['src']
-    
     # return scraped details
     return fighterDetails
-
-
-if __name__ == '__main__':
-    
-    """Run some tests to ensure scraper is working correctly"""
-    
-    # import modules necessary for testing
-    import unittest
-    
-    # define class to perform testing
-    class TestSherdogScraper(unittest.TestCase):
-
-        def test_fighter(self):
-            
-            # get fighter details for 2326
-            f = getFighterDetails(2326)
-            
-            # check results of scraper run
-            self.assertEqual(f['name'], 'Mirko Filipovic')
-            self.assertEqual(f['nickName'], 'Cro Cop')
-            self.assertEqual(f['association'], 'Cro Cop Squad Gym')
-            self.assertEqual(f['height'], '6\'2" (188cm)')
-            self.assertEqual(f['weight'], '227lbs (103kg)')
-            self.assertEqual(f['birthDate'], '1974-09-10')
-            self.assertEqual(f['city'], 'Zagreb')
-            self.assertEqual(f['country'], 'Croatia')
-        
-        def test_event(self):
-            
-            # get event details for 18346
-            e = getEventDetails(18346)
-            
-            # check results of scraper run
-            self.assertEqual(e['title'], 'UFC 141 - Lesnar vs. Overeem')
-            self.assertEqual(e['venue'], 'MGM Grand Garden Arena')
-            self.assertEqual(e['city'], 'Las Vegas, Nevada, United States')
-            self.assertEqual(e['date'], '2011-12-30')
-            self.assertEqual(e['fights'][0]['fighter1'], '25981')
-            self.assertEqual(e['fights'][0]['fighter2'], '5185')
-            self.assertEqual(e['fights'][0]['fighter1'], e['fights'][0]['winner'])
-            self.assertEqual(e['fights'][1]['fighter1'], '24765')
-            self.assertEqual(e['fights'][1]['fighter2'], '16555')
-            self.assertEqual(e['fights'][1]['fighter1'], e['fights'][1]['winner'])
-            self.assertEqual(e['fights'][2]['fighter1'], '16374')
-            self.assertEqual(e['fights'][2]['fighter2'], '573')
-            self.assertEqual(e['fights'][2]['fighter1'], e['fights'][2]['winner'])
-            self.assertEqual(e['fights'][3]['fighter1'], '26070')
-            self.assertEqual(e['fights'][3]['fighter2'], '7540')
-            self.assertEqual(e['fights'][3]['fighter1'], e['fights'][3]['winner'])
-            self.assertEqual(e['fights'][4]['fighter1'], '11884')
-            self.assertEqual(e['fights'][4]['fighter2'], '10380')
-            self.assertEqual(e['fights'][4]['fighter1'], e['fights'][4]['winner'])
-            self.assertEqual(e['fights'][5]['fighter1'], '48046')
-            self.assertEqual(e['fights'][5]['fighter2'], '5778')
-            self.assertEqual(e['fights'][5]['fighter1'], e['fights'][5]['winner'])
-            self.assertEqual(e['fights'][6]['fighter1'], '26162')
-            self.assertEqual(e['fights'][6]['fighter2'], '435')
-            self.assertEqual(e['fights'][6]['fighter1'], e['fights'][6]['winner'])
-            self.assertEqual(e['fights'][7]['fighter1'], '24539')
-            self.assertEqual(e['fights'][7]['fighter2'], '4865')
-            self.assertEqual(e['fights'][7]['fighter1'], e['fights'][7]['winner'])
-            self.assertEqual(e['fights'][8]['fighter1'], '11451')
-            self.assertEqual(e['fights'][8]['fighter2'], '15105')
-            self.assertEqual(e['fights'][8]['fighter1'], e['fights'][8]['winner'])
-            self.assertEqual(e['fights'][9]['fighter1'], '461')
-            self.assertEqual(e['fights'][9]['fighter2'], '17522')
-            self.assertEqual(e['fights'][9]['fighter1'], e['fights'][9]['winner'])
-
-    # run tests
-    unittest.main()

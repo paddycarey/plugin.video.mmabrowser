@@ -4,6 +4,7 @@ import os
 import socket
 import sqlite3
 import sys
+import traceback
 import urllib
 import xbmc
 import xbmcaddon
@@ -40,7 +41,8 @@ __artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
 forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
 
 ## initialise database
-storageDBPath = os.path.join(__addondir__, 'storage.db')
+__dbVersion__ = 0.1
+storageDBPath = os.path.join(__addondir__, 'storage-%s.db' % __dbVersion__)
 storageDB = sqlite3.connect(storageDBPath)
 
 dialog = xbmcgui.DialogProgress()
@@ -167,7 +169,10 @@ def getMissingData():
             cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
             __addon__.setSetting(id="forceFullRescan", value='false')
 
-    
+        maxRetries = 5
+        retries = 0
+        log('#################################')
+
         ## for every new event in library retrieve details from sherdog.com
         cur.execute("SELECT DISTINCT eventID FROM events")
         storedIDs = cur.fetchall()
@@ -178,22 +183,48 @@ def getMissingData():
                 libItemCount = libItemCount + 1
                 scannedID = unicode(libraryItem['ID'])
                 if not (scannedID,) in storedIDs:
-                    try:
-                        dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
-                        event = getEventDetails(libraryItem['ID'])
-                        cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
-                        for fight in event['fights']:
-                            cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
-                            cur.execute("SELECT fighterID from fighters")
-                            fighters = cur.fetchall()
-                            for fighter in [fight['fighter1'], fight['fighter2']]:
-                                if not (fighter,) in fighters:
-                                    dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
-                                    fighterDetails = getFighterDetails(fighter)
-                                    cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthDate'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', ''), fighterDetails['thumbUrl']))
+                    while retries < maxRetries:
+                        try:
+                            dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
+                            log('Retrieving event details from sherdog.com: (%s) %s' % (libraryItem['ID'], os.path.dirname(libraryItem['path'])))
+                            event = getEventDetails(int(libraryItem['ID']))
+                            log('Event ID:       %s' % event['ID'])
+                            log('Event Title:    %s' % event['title'].replace('\'', ''))
+                            log('Event Promoter: %s' % event['promotion'].replace('\'', ''))
+                            log('Event Date:     %s' % event['date'])
+                            log('Event Venue:    %s' % event['venue'].replace('\'', ''))
+                            log('Event City:     %s' % event['city'].replace('\'', ''))
+                            cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
+                            for fight in event['fights']:
+                                cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
+                                cur.execute("SELECT fighterID from fighters")
+                                fighters = cur.fetchall()
+                                for fighter in [fight['fighter1'], fight['fighter2']]:
+                                    if not (fighter,) in fighters:
+                                        dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
+                                        log('## Retrieving fighter details from sherdog.com: %s' % fighter)
+                                        fighterDetails = getFighterDetails(int(fighter))
+                                        log('Fighter ID:       %s' % fighterDetails['ID'])
+                                        log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
+                                        log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
+                                        log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
+                                        log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
+                                        log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
+                                        log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
+                                        log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
+                                        log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
+                                        log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
+                                        cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthDate'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', ''), fighterDetails['thumbUrl']))
+                            log('Retrieved event details from sherdog.com: %s' % libraryItem['ID'])
                             storageDB.commit()
-                    except:
-                        print sys.exc_info()
-                        log('Error adding event to database: %s' % libraryItem['ID'])
-                        log('Rolling back database to clean state')
-                        storageDB.rollback()
+                        except:
+                            retries = retries + 1
+                            print sys.exc_info()
+                            #print traceback.format_exc()
+                            log('Error adding event to database: %s' % libraryItem['ID'])
+                            log('Rolling back database to clean state')
+                            storageDB.rollback()
+                        else:
+                            retries = 0
+                            log('#################################')
+                            break
