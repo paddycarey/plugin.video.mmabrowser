@@ -217,6 +217,8 @@ def getEventDetails(eventID):
             
             # find and store end time of fight
             fightDetails['time'] = cols[8].string
+            if not fightDetails['time']:
+                fightDetails['time'] = '5:00'
             
             # add fightDetails dict to fights list
             fights.append(fightDetails)
@@ -228,6 +230,7 @@ def getEventDetails(eventID):
     sortFights = [(dict_[sort_on], dict_) for dict_ in fights]
     sortFights.sort()
     eventDetails['fights'] = [dict_ for (key, dict_) in sortFights]
+    
     # return the scraped details
     return eventDetails
 
@@ -306,6 +309,6 @@ def getFighterDetails(fighterID):
 
     # find and store url for fighter image
     fighterDetails['thumbUrl'] = bio.img['src']
-
+    
     # return scraped details
     return fighterDetails
