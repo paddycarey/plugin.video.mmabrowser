@@ -219,8 +219,7 @@ def getMissingData():
                             storageDB.commit()
                         except:
                             retries = retries + 1
-                            print sys.exc_info()
-                            #print traceback.format_exc()
+                            log(str(traceback.format_exc()))
                             log('Error adding event to database: %s' % libraryItem['ID'])
                             log('Rolling back database to clean state')
                             storageDB.rollback()

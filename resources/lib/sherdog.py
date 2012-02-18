@@ -3,10 +3,10 @@
 """A set of functions to scrape event and fighter data from sherdog.com"""
 
 __author__      = ['Patrick Carey', 'Jason Harmon']
-__copyright__   = 'Copyright 2012 Patrick Carey'
+__copyright__   = 'Copyright 2012'
 __credits__     = ['Patrick Carey', 'Jason Harmon']
 __license__     = 'GPLv2'
-__version__     = '0.0.2'
+__version__     = '0.0.1-mmabrowser'
 
 import os
 import collections
@@ -17,7 +17,6 @@ from BeautifulSoup import BeautifulSoup
 
 # declare necessary constants for script operation
 __fighterURL__ = 'http://www.sherdog.com/fighter/X-%s'
-__fighterSearchURL__ = 'http://www.sherdog.com/stats/fightfinder?weight=%s&SearchTxt=%s'
 __eventURL__ = 'http://www.sherdog.com/events/X-%s'
 __defaultTimeout__ = 60
 
