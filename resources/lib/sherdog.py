@@ -162,6 +162,8 @@ def getEventDetails(eventID):
         fightDetails['winner'] = fightDetails["fighter1"]
     if rightResult != None and leftResult.string == 'win':
         fightDetails['winner'] = fightDetails["fighter2"]
+    else:
+        fightDetails['winner'] = ''
     
     tempCells =  soup.find("table", {"class" : "resume"}).findAll("td")
     fightDetails['ID'] = int(tempCells[0].findAll(text=True)[1].strip())
