@@ -2,7 +2,7 @@
 - Updated for new sherdog.com layout
 - Don't download fighter thumb, instead display directly from sherdog
 - Retry up to 3 times if error getting metadata
-- [B]Changed DB format so all events will need to be rescanned{/B]
+- [B]Changed DB format so all events will need to be rescanned[/B]
 
 [B]0.0.5[/B]
 - Don't show sample files in library

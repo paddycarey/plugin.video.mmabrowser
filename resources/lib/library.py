@@ -169,7 +169,7 @@ def getMissingData():
             cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
             __addon__.setSetting(id="forceFullRescan", value='false')
 
-        maxRetries = 5
+        maxRetries = 3
         retries = 0
         log('#################################')
 
