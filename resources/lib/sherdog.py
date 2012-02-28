@@ -11,7 +11,6 @@ __version__     = '0.0.1-mmabrowser'
 import os
 import collections
 import socket
-from resources.lib.utils import log
 from urllib2 import urlopen
 from BeautifulSoup import BeautifulSoup
 
@@ -32,8 +31,6 @@ def getHtml(url):
     data -- A string containing the contents to the remote page
     """
     
-    log('Retrieving url: %s' % url)
-
     # set default timeout
     socket.setdefaulttimeout(__defaultTimeout__)
 
@@ -45,8 +42,6 @@ def getHtml(url):
     
     # close connection to url
     client.close()
-
-    log('Retrieved url: %s' % url)
 
     # return the retrieved data
     return data
@@ -290,7 +285,7 @@ def getFighterDetails(fighterID):
     except Exception:
         fighterDetails['nickName'] = ''
     try:
-        fighterDetails['association'] = bio.find("span", {"class" : "item association"}).strong.string
+        fighterDetails['association'] = bio.find("span", {"class" : "item association"}).strong.a.string
     except Exception:
         fighterDetails['association'] = ''
     try:
