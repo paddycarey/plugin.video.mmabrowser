@@ -69,15 +69,14 @@ log('Library path: %s' % __addon__.getSetting("libraryPath"))
 
 ## check path and generate desired list
 if path == "/":
-    xbmc.sleep(5000)
+    xbmc.sleep(3000)
     library.dialog.create(__addonname__, "MMA Browser", "Loading")
     library.scanLibrary()
     library.getMissingData()
     if __addon__.getSetting("checkMissingExtras") == 'true':
         library.getMissingExtras()
     library.dialog.close()
-    xbmc.sleep(1000)
-    mainMenu()
+    menu()
 elif path.startswith("/browsebyorganisation"):
     log("path:%s" % path)
     organisation = path.replace('/browsebyorganisation','')
