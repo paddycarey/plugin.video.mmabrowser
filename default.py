@@ -11,7 +11,6 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 
-import resources.lib.library as library
 from resources.lib.utils import *
 from resources.lib.navigation import *
 
@@ -43,7 +42,7 @@ def menu():
         log("Select: " + str(select))
         if select == -1:
             log("menu quit by user")
-            return
+            sys.exit(0)
         else:
             if select == 0:
                 ## populate list of organisations
@@ -72,6 +71,7 @@ def menu():
                 updateLibrary()
 
 def updateLibrary():
+    import resources.lib.library as library
     library.dialog.create(__addonname__, "MMA Browser", "Loading")
     library.scanLibrary()
     library.getMissingData()
@@ -84,7 +84,6 @@ log('Library path: %s' % __addon__.getSetting("libraryPath"))
 
 ## check path and generate desired list
 if path == "/":
-    xbmc.sleep(3000)
     menu()
 elif path.startswith("/browsebyorganisation"):
     log("path:%s" % path)
