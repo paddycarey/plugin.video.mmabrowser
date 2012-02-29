@@ -20,6 +20,9 @@ __addonidint__        = int(sys.argv[1])
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __addonname__         = __addon__.getAddonInfo('name')
 
+# workaround for when extrafanart enabled in nox
+if sys.argv[0] == 'plugin://plugin.video.mmabrowser/extrafanart/':
+    sys.exit(0)
 
 xbmcplugin.setContent(__addonidint__, 'tvshows') 
 
@@ -108,3 +111,4 @@ elif path.startswith("/getEvent/"):
 
 ## finish adding items to list and display
 xbmcplugin.endOfDirectory(__addonidint__)
+xbmc.sleep(2000)
