@@ -36,7 +36,7 @@ except:
 # Usermenu:
 def menu():
 
-    options = ['Browse by Promotion', 'Browse by Fighter', 'All Events', 'Search']
+    options = ['Browse by Promotion', 'Browse by Fighter', 'All Events', 'Search', 'Update Library']
 
     while True:
         select = xbmcgui.Dialog().select("MMA Browser", options)
