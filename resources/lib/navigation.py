@@ -9,13 +9,21 @@ from resources.lib.utils import *
 import resources.lib.databaseops as dbops
 import resources.lib.library as library
 
+try:
+    import StorageServer
+except:
+    import storageserverdummy as StorageServer
+
 ### get addon info
 __addon__             = xbmcaddon.Addon()
 __addonpath__         = __addon__.getAddonInfo('path')
+__addonid__         = __addon__.getAddonInfo('id')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'events')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 
+# initialise cache object to speed up plugin operation
+cache = StorageServer.StorageServer(__addonid__ + '-fightlists', 24*7)
 
 def mainMenu():
     log('Showing main menu')
@@ -31,7 +39,7 @@ def allEvents():
     for event in dbList:
         for x in library.loadLibrary():
             if event[0] == x['ID']:
-                fightList = dbops.getFightersByEvent(event[0])
+                fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
 
 def browseByOrganisation():
@@ -46,7 +54,7 @@ def getEventsByOrganisation(organisation):
     for event in dbList:
         for x in library.loadLibrary():
             if event[0] == x['ID']:
-                fightList = dbops.getFightersByEvent(event[0])
+                fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
 
 def browseByFighter():
@@ -63,7 +71,7 @@ def getEventsByFighter(fighterID):
     for event in dbList:
         for x in library.loadLibrary():
             if event[0] == x['ID']:
-                fightList = dbops.getFightersByEvent(event[0])
+                fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
 
 def searchAll():
@@ -78,7 +86,7 @@ def searchAll():
         for event in dbList:
             for x in library.loadLibrary():
                 if event[0] == x['ID']:
-                    fightList = dbops.getFightersByEvent(event[0])
+                    fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                     addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalListItems)
         for fighter in dbList2:
             addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalListItems, fighter[9])
@@ -99,7 +107,7 @@ def getEvent(eventID):
                 description = open(os.path.join(__thumbDir__, '%s-description.txt' % event[0])).read()
             except IOError:
                 description = outline
-            fighterList = dbops.getFightersByEvent(eventID)
+            fighterList = cache.cacheFunction(dbops.getFightersByEvent, eventID)
             description = description + '\n\n' + '\n'.join(fighterList)
             fileList = getVideoList(x['path'])
             if len(fileList) == 1:

@@ -38,31 +38,46 @@ def menu():
 
     options = ['Browse by Promotion', 'Browse by Fighter', 'All Events', 'Search']
 
-    select = xbmcgui.Dialog().select("MMA Browser", options)
-    log("Select: " + str(select))
-    if select == -1:
-        log("menu quit by user")
-        return
-    else:
-        if select == 0:
-            ## populate list of organisations
-            xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
-            xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
-            browseByOrganisation()
-        elif select == 1:
-            ## populate list of fighters
-            xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
-            xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
-            browseByFighter()
-        elif select == 2:
-            ## populate list of all events
-            xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
-            xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
-            allEvents()
-        elif select == 3:
-            ## populate list of all events
-            searchAll()
+    while True:
+        select = xbmcgui.Dialog().select("MMA Browser", options)
+        log("Select: " + str(select))
+        if select == -1:
+            log("menu quit by user")
+            return
+        else:
+            if select == 0:
+                ## populate list of organisations
+                xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+                xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
+                browseByOrganisation()
+                return
+            elif select == 1:
+                ## populate list of fighters
+                xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_EPISODE)
+                xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+                browseByFighter()
+                return
+            elif select == 2:
+                ## populate list of all events
+                xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_DATE)
+                xbmcplugin.addSortMethod(__addonidint__, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+                allEvents()
+                return
+            elif select == 3:
+                ## populate list of all events
+                searchAll()
+                return
+            elif select == 4:
+                ## populate list of all events
+                updateLibrary()
 
+def updateLibrary():
+    library.dialog.create(__addonname__, "MMA Browser", "Loading")
+    library.scanLibrary()
+    library.getMissingData()
+    if __addon__.getSetting("checkMissingExtras") == 'true':
+        library.getMissingExtras()
+    library.dialog.close()
 
 log('Script path: %s' % path)
 log('Library path: %s' % __addon__.getSetting("libraryPath"))
@@ -70,12 +85,6 @@ log('Library path: %s' % __addon__.getSetting("libraryPath"))
 ## check path and generate desired list
 if path == "/":
     xbmc.sleep(3000)
-    library.dialog.create(__addonname__, "MMA Browser", "Loading")
-    library.scanLibrary()
-    library.getMissingData()
-    if __addon__.getSetting("checkMissingExtras") == 'true':
-        library.getMissingExtras()
-    library.dialog.close()
     menu()
 elif path.startswith("/browsebyorganisation"):
     log("path:%s" % path)
