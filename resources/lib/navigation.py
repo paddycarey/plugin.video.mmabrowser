@@ -31,6 +31,7 @@ def mainMenu():
     addDir("Browse by: Fighter", "/browsebyfighter/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Browse a list of all fighters in your library")
     addDir("All Events", "/allevents/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Browse a list of all events in your library")
     addDir("Search", "/search/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Search all items in your library")
+    addDir("Update Library", "/update/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Scan your library for new events")
 
 def allEvents():
     log('Browsing: All events')
