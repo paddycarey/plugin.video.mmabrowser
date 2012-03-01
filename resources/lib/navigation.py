@@ -42,6 +42,7 @@ def allEvents():
             if event[0] == x['ID']:
                 fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
+                break
 
 def browseByOrganisation():
     log('Browsing: Organisations')
@@ -57,6 +58,7 @@ def getEventsByOrganisation(organisation):
             if event[0] == x['ID']:
                 fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
+                break
 
 def browseByFighter():
     log('Browsing: Fighters')
@@ -74,6 +76,7 @@ def getEventsByFighter(fighterID):
             if event[0] == x['ID']:
                 fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
+                break
 
 def searchAll():
     log('Searching MMA Library')
@@ -89,6 +92,7 @@ def searchAll():
                 if event[0] == x['ID']:
                     fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
                     addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalListItems)
+                    break
         for fighter in dbList2:
             addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalListItems, fighter[9])
 
