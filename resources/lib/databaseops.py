@@ -45,7 +45,7 @@ def getEventsByPromotion(promotion):
     log('Retrieving details of all events from database for promotion: %s' % promotion)
     with storageDB:
         cur = storageDB.cursor()
-        cur.execute("SELECT eventID, title, promotion, date, venue, city FROM events WHERE promotion='%s' ORDER BY date" % promotion)
+        cur.execute("SELECT DISTINCT eventID, title, promotion, date, venue, city FROM events WHERE promotion='%s' ORDER BY date" % promotion)
         result = cur.fetchall()
     return result
 
@@ -77,7 +77,7 @@ def getEvent(eventID):
     log('Retrieving details of event from database: %s' % eventID)
     with storageDB:
         cur = storageDB.cursor()
-        cur.execute("SELECT * FROM events WHERE eventID='%s'" % eventID)
+        cur.execute("SELECT DISTINCT * FROM events WHERE eventID='%s'" % eventID)
         result = cur.fetchone()
     return result
 

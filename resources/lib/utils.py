@@ -199,7 +199,7 @@ def log(txt='', severity=xbmc.LOGDEBUG):
         xbmc.log(msg=message, level=severity)
     except UnicodeEncodeError:
         try:
-            message = _normalize_string('Artwork Downloader: %s' % txt)
+            message = _normalize_string('MMA Browser: %s' % txt)
             xbmc.log(msg=message, level=severity)
         except:
             message = ('Artwork Downloader: UnicodeEncodeError')

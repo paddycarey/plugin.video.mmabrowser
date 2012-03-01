@@ -20,8 +20,6 @@ __addonidint__        = int(sys.argv[1])
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __addonname__         = __addon__.getAddonInfo('name')
 
-xbmcplugin.setContent(__addonidint__, 'tvshows') 
-
 ## parse plugin arguments
 params = get_params()
 
@@ -44,6 +42,7 @@ def updateLibrary():
 log('Script path: %s' % path)
 log('Library path: %s' % __addon__.getSetting("libraryPath"))
 
+xbmcplugin.setContent(__addonidint__, 'tvshows') 
 
 ## check path and generate desired list
 if path == "/":
