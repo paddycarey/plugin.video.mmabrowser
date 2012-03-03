@@ -186,21 +186,10 @@ def downloadFile(url, filePath):
         log("Downloaded: %s" % url)
         return True
 
-def normalizeString( text ):
-    try: text = unicodedata.normalize( 'NFKD', _unicode( text ) ).encode( 'ascii', 'ignore' )
-    except: pass
-    return text
 
 def log(txt='', severity=xbmc.LOGDEBUG):
 
     """Log to txt xbmc.log at specified severity"""
-    try:
-        message = ('MMA Browser: %s' % txt)
-        xbmc.log(msg=message, level=severity)
-    except UnicodeEncodeError:
-        try:
-            message = _normalize_string('MMA Browser: %s' % txt)
-            xbmc.log(msg=message, level=severity)
-        except:
-            message = ('Artwork Downloader: UnicodeEncodeError')
-            xbmc.log(msg=message, level=xbmc.LOGWARNING)
+    message = ('MMA Browser: %s' % txt.encode('utf-8'))
+    xbmc.log(msg=message, level=severity)
+
