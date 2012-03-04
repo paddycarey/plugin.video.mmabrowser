@@ -169,7 +169,7 @@ def getMissingData():
             cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
             __addon__.setSetting(id="forceFullRescan", value='false')
 
-        maxRetries = 3
+        maxRetries = 2
         retries = 0
         log('#################################')
 
@@ -183,6 +183,7 @@ def getMissingData():
                 libItemCount = libItemCount + 1
                 scannedID = unicode(libraryItem['ID'])
                 if not (scannedID,) in storedIDs:
+                    retries = 0
                     while retries < maxRetries:
                         try:
                             dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
