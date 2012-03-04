@@ -170,7 +170,6 @@ def getMissingData():
             __addon__.setSetting(id="forceFullRescan", value='false')
 
         maxRetries = 2
-        retries = 0
         log('#################################')
 
         ## for every new event in library retrieve details from sherdog.com
