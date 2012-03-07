@@ -115,14 +115,8 @@ def getEvent(eventID):
             fighterList = cache.cacheFunction(dbops.getFightersByEvent, eventID)
             description = description + '\n\n' + '\n'.join(fighterList)
             fileList = getVideoList(x['path'])
-            if len(fileList) == 1:
-                li=xbmcgui.ListItem(label = event[1], iconImage = thumbPath, thumbnailImage = thumbPath)
-                li.setInfo( type="Video", infoLabels={ "title": event[1], "plot": description, "cast": fighterList, "genre": event[2], "date": event[3], "premiered": event[3], "tvshowtitle": event[2]} )
-                xbmc.Player().play(fileList[0]['path'], li)
-                sys.exit(0)
-            else:
-                for vidFile in fileList:
-                    addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = event[2])
+            for vidFile in fileList:
+                addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = event[1], tvshowtitle = event[1])
 
 def getVideoList(rootDir):
 

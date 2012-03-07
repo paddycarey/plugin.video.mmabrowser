@@ -62,14 +62,14 @@ def getUniq(seq):
         result.append(item)
     return result
 
-def addLink(linkName = '', plot = '', url = '', thumbPath = '', fanartPath = '', plotoutline = '', genre = '', date = '', playable = 'true'):
+def addLink(linkName = '', plot = '', url = '', thumbPath = '', fanartPath = '', plotoutline = '', genre = '', date = '', playable = 'true', tvshowtitle = ''):
     if not xbmcvfs.exists(thumbPath):
         thumbPath = "DefaultVideo.png"
     if not xbmcvfs.exists(fanartPath):
         fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
     li = xbmcgui.ListItem(linkName, iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setProperty("IsPlayable", playable)
-    li.setInfo( type="Video", infoLabels={ "Title": linkName, "TVShowTitle": linkName, "plot": plot, "genre": genre, "date":date} )
+    li.setInfo( type="Video", infoLabels={ "Title": linkName, "TVShowTitle": tvshowtitle, "plot": plot, "genre": genre, "date":date} )
     li.setProperty( "Fanart_Image", fanartPath)
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = url, listitem = li, isFolder = False)
 
