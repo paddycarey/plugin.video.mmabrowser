@@ -18,6 +18,22 @@ __fighterURL__ = 'http://www.sherdog.com/fighter/X-%s'
 __eventURL__ = 'http://www.sherdog.com/events/X-%s'
 __defaultTimeout__ = 60
 
+# order preserving and get unique entry
+def getUniq(seq):
+    
+    seen = []
+    result = []
+    
+    for item in seq:
+        
+        if item in seen: continue
+        
+        seen.append( item )
+        result.append( item )
+        
+    return result
+
+
 def getHtml(url):
     
     """
@@ -179,7 +195,7 @@ def getEventDetails(eventID):
     eventDetails['fights'] = eventDetails['fights'].rstrip()
 
     # sort fighter list
-    eventDetails['fighters'] = sorted(eventDetails['fighters'])
+    eventDetails['fighters'] = sorted(getUniq(eventDetails['fighters']))
 
     # return the scraped details
     return eventDetails
@@ -277,6 +293,15 @@ if __name__ == '__main__':
             self.assertEqual(e['date'], '2011-12-30')
             self.assertEqual(e['fights'], 'Alistair Overeem vs. Brock Lesnar\nNate Diaz vs. Donald Cerrone\nJohny Hendricks vs. Jon Fitch\nAlexander Gustafsson vs. Vladimir Matyushenko\nJim Hettes vs. Nam Phan\nRoss Pearson vs. Junior Assuncao\nDanny Castillo vs. Anthony Njokuani\nDong Hyun Kim vs. Sean Pierson\nJacob Volkmann vs. Efrain Escudero\nDiego Nunes vs. Manny Gamburyan')
             self.assertEqual(e['fighters'], sorted(['25981', '5185', '24765', '16555', '16374', '573', '26070', '7540', '11884', '10380', '48046', '5778', '26162', '435', '24539', '4865', '11451', '15105', '461', '17522']))
+
+        def test_event_2(self):
+            e = getEventDetails(20039)
+            self.assertEqual(e['title'], u'UFC on Fox 3 - Miller vs. Diaz')
+            self.assertEqual(e['venue'], u'IZOD Center')
+            self.assertEqual(e['city'], 'East Rutherford, New Jersey, United States')
+            self.assertEqual(e['date'], '2012-05-05')
+            self.assertEqual(e['fights'], 'Nate Diaz vs. Jim Miller\nJosh Koscheck vs. Johny Hendricks\nLavar Johnson vs. Pat Barry\nRousimar Palhares vs. Alan Belcher\nJohn Dodson vs. Darren Uyenoyama\nJohnny Bedford vs. Nick Denis\nLouis Gaudinot vs. John Lineker\nPascal Krauss vs. John Hathaway\nDennis Hallman vs. Tony Ferguson\nJohn Cholish vs. Danny Castillo\nPablo Garza vs. Dennis Bermudez\nKarlos Vemola vs. Mike Massenzio')
+            self.assertEqual(e['fighters'], sorted(['10967', '11451', '11660', '12852', '14463', '16286', '16704', '19128', '19717', '24539', '26070', '275', '31239', '33342', '35448', '35867', '40238', '41906', '43439', '45230', '4679', '58065', '9418', '9511']))
 
         def test_fighter1(self):
             f = getFighterDetails(2326)

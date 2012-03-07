@@ -41,7 +41,7 @@ __artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
 forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
 
 ## initialise database
-__dbVersion__ = 0.1
+__dbVersion__ = 0.2
 storageDBPath = os.path.join(__addondir__, 'storage-%s.db' % __dbVersion__)
 storageDB = sqlite3.connect(storageDBPath)
 
@@ -162,11 +162,11 @@ def getMissingData():
             log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
         if __addon__.getSetting("forceFullRescan") == 'true':
             cur.execute("DROP TABLE IF EXISTS events")
-            cur.execute("CREATE TABLE events(eventID TEXT, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT)")
-            cur.execute("DROP TABLE IF EXISTS fights")
-            cur.execute("CREATE TABLE fights(eventID TEXT, fightID TEXT, fighter1 TEXT, fighter2 TEXT, winner TEXT, result TEXT, round TEXT, time TEXT)")
+            cur.execute("CREATE TABLE events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
             cur.execute("DROP TABLE IF EXISTS fighters")
-            cur.execute("CREATE TABLE fighters(fighterID TEXT, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
+            cur.execute("CREATE TABLE fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
+            cur.execute("DROP TABLE IF EXISTS fights")
+            cur.execute("CREATE TABLE fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
             __addon__.setSetting(id="forceFullRescan", value='false')
 
         maxRetries = 2
@@ -194,27 +194,26 @@ def getMissingData():
                             log('Event Date:     %s' % event['date'])
                             log('Event Venue:    %s' % event['venue'].replace('\'', ''))
                             log('Event City:     %s' % event['city'].replace('\'', ''))
-                            cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', '')))
-                            for fight in event['fights']:
-                                cur.execute("INSERT INTO fights VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], fight['ID'], fight['fighter1'], fight['fighter2'], fight['winner'], fight['result'].replace('\'', ''), fight['round'].replace('\'', ''), fight['time'].replace('\'', '')))
+                            cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', ''), event['fights'].replace('\'', '')))
+                            for fighter in event['fighters']:
+                                cur.execute("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter))
                                 cur.execute("SELECT fighterID from fighters")
                                 fighters = cur.fetchall()
-                                for fighter in [fight['fighter1'], fight['fighter2']]:
-                                    if not (fighter,) in fighters:
-                                        dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
-                                        log('## Retrieving fighter details from sherdog.com: %s' % fighter)
-                                        fighterDetails = getFighterDetails(int(fighter))
-                                        log('Fighter ID:       %s' % fighterDetails['ID'])
-                                        log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
-                                        log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
-                                        log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
-                                        log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
-                                        log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
-                                        log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
-                                        log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
-                                        log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
-                                        log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
-                                        cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthDate'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', ''), fighterDetails['thumbUrl']))
+                                if not (fighter,) in fighters:
+                                    dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
+                                    log('## Retrieving fighter details from sherdog.com: %s' % fighter)
+                                    fighterDetails = getFighterDetails(int(fighter))
+                                    log('Fighter ID:       %s' % fighterDetails['ID'])
+                                    log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
+                                    log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
+                                    log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
+                                    log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
+                                    log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
+                                    log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
+                                    log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
+                                    log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
+                                    log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
+                                    cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthDate'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', ''), fighterDetails['thumbUrl']))
                             log('Retrieved event details from sherdog.com: %s' % libraryItem['ID'])
                             storageDB.commit()
                         except:

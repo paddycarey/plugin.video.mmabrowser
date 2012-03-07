@@ -40,8 +40,7 @@ def allEvents():
     for event in dbList:
         for x in library.loadLibrary():
             if event[0] == x['ID']:
-                fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
 def browseByOrganisation():
@@ -56,8 +55,7 @@ def getEventsByOrganisation(organisation):
     for event in dbList:
         for x in library.loadLibrary():
             if event[0] == x['ID']:
-                fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
 def browseByFighter():
@@ -74,8 +72,7 @@ def getEventsByFighter(fighterID):
     for event in dbList:
         for x in library.loadLibrary():
             if event[0] == x['ID']:
-                fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
-                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalEvents)
+                addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
 def searchAll():
@@ -90,8 +87,7 @@ def searchAll():
         for event in dbList:
             for x in library.loadLibrary():
                 if event[0] == x['ID']:
-                    fightList = cache.cacheFunction(dbops.getFightersByEvent, event[0])
-                    addEvent(event[0], event[1], event[2], event[3], event[4], event[5], fightList, totalListItems)
+                    addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalListItems)
                     break
         for fighter in dbList2:
             addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalListItems, fighter[9])
@@ -112,8 +108,7 @@ def getEvent(eventID):
                 description = open(os.path.join(__thumbDir__, '%s-description.txt' % event[0])).read()
             except IOError:
                 description = outline
-            fighterList = cache.cacheFunction(dbops.getFightersByEvent, eventID)
-            description = description + '\n\n' + '\n'.join(fighterList)
+            description = description + '\n\n' + event[6]
             fileList = getVideoList(x['path'])
             for vidFile in fileList:
                 addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = event[1], tvshowtitle = event[1])
