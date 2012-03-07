@@ -9,7 +9,6 @@ __license__     = 'GPLv2'
 __version__     = '0.0.1-mmabrowser'
 
 import os
-import collections
 import socket
 from urllib2 import urlopen
 from BeautifulSoup import BeautifulSoup
@@ -28,7 +27,7 @@ def getHtml(url):
     url -- A string containing the url of a remote page to retrieve
     
     Returns:
-    data -- A string containing the contents to the remote page
+    data -- A string containing the contents of the remote page
     """
     
     # set default timeout
@@ -138,42 +137,24 @@ def getEventDetails(eventID):
     # find list of fights for event
     table = soup.find("div", {"class" : "module_fight_card"})
     
-    # initialise empty list to store fightDetails dicts
-    eventDetails['fights'] = []
+    # initialise empty list to store fighter list
+    eventDetails['fighters'] = []
+    
+    # initialise empty string to store fight list
+    eventDetails['fights'] = ''
 
+    eventDetails['fighters'].append(soup.find("div", {"class" : "fighter left_side"}).a['href'].rsplit("-", 1)[1])
+    eventDetails['fighters'].append(soup.find("div", {"class" : "fighter right_side"}).a['href'].rsplit("-", 1)[1])
     
-    fightDetails = {}
-    fights = []
-    fightDetails['fighter1'] = soup.find("div", {"class" : "fighter left_side"}).a['href'].rsplit("-", 1)[1]
-    fightDetails['fighter2'] = soup.find("div", {"class" : "fighter right_side"}).a['href'].rsplit("-", 1)[1]
-
-    leftResult = ''
-    rightResult = ''
-    winner = ''
-    leftResult = soup.find("div", {"class" : "fighter left_side"}).find("span", {"class" : "final_result win"})
-    rightResult = soup.find("div", {"class" : "fighter right_side"}).find("span", {"class" : "final_result win"})
-    
-    if leftResult != None and leftResult.string == 'win':
-        fightDetails['winner'] = fightDetails["fighter1"]
-    if rightResult != None and leftResult.string == 'win':
-        fightDetails['winner'] = fightDetails["fighter2"]
-    else:
-        fightDetails['winner'] = ''
-    
-    tempCells =  soup.find("table", {"class" : "resume"}).findAll("td")
-    fightDetails['ID'] = int(tempCells[0].findAll(text=True)[1].strip())
-    fightDetails['result'] = tempCells[1].findAll(text=True)[1].strip()
-    fightDetails['referee'] = tempCells[2].findAll(text=True)[1].strip()
-    fightDetails['round'] = tempCells[3].findAll(text=True)[1].strip()
-    fightDetails['time'] = tempCells[4].findAll(text=True)[1].strip()
-    fights.append(fightDetails)
+    eventDetails['fights'] = eventDetails['fights'] + soup.find("div", {"class" : "fighter left_side"}).h3.a.string + ' vs. '
+    eventDetails['fights'] = eventDetails['fights'] + soup.find("div", {"class" : "fighter right_side"}).h3.a.string + '\n'
 
     # find all rows in the fights table
     rows = soup.find("div", {"class" : "content table"}).findAll("tr")
     
     # set rowcount to 0
     rowcount = 0
-        
+    
     # loop through all rows in fights table
     for row in rows:
         
@@ -183,51 +164,23 @@ def getEventDetails(eventID):
             # find all columns in table
             cols = row.findAll('td')
             
-            # initialise empty dict to store fight details
-            fightDetails = {}
-            
-            # find and store fight ID
-            fightDetails['ID'] = int(cols[0].string)
-            
             # find and store ID for fighter1
-            fightDetails['fighter1'] = cols[1].a['href'].rsplit('-', 1)[1]
+            eventDetails['fighters'].append(cols[1].a['href'].rsplit('-', 1)[1])
             # find and store ID for fighter2
-            fightDetails['fighter2'] = cols[5].a['href'].rsplit('-', 1)[1]
+            eventDetails['fighters'].append(cols[5].a['href'].rsplit('-', 1)[1])
             
-            # check that fight was not a draw
-            win = cols[1].find("span").find(text=True)
-            if win == 'win':
-                # find and store winner ID
-                fightDetails['winner'] = fightDetails['fighter1']
-            else:
-                # store blank string if no winner
-                fightDetails['winner'] = ''
+            eventDetails['fights'] = eventDetails['fights'] + cols[1].a.string + ' vs. '
+            eventDetails['fights'] = eventDetails['fights'] + cols[5].a.string + '\n'
             
-            # find and store result
-            fightDetails['result'] = cols[6].find(text=True).string
-            
-            # find and store round in which fight ended
-            fightDetails['referee'] = cols[6].find("span").string
-            
-            # find and store round in which fight ended
-            fightDetails['round'] = cols[7].string
-            
-            # find and store end time of fight
-            fightDetails['time'] = cols[8].string
-            if not fightDetails['time']:
-                fightDetails['time'] = '5:00'
-            
-            # add fightDetails dict to fights list
-            fights.append(fightDetails)
-        
         # increase rowcount by 1
         rowcount = rowcount + 1
 
-    sort_on = "ID"
-    sortFights = [(dict_[sort_on], dict_) for dict_ in fights]
-    sortFights.sort()
-    eventDetails['fights'] = [dict_ for (key, dict_) in sortFights]
-    
+    # strip newline from end of fight list
+    eventDetails['fights'] = eventDetails['fights'].rstrip()
+
+    # sort fighter list
+    eventDetails['fighters'] = sorted(eventDetails['fighters'])
+
     # return the scraped details
     return eventDetails
 
@@ -309,3 +262,42 @@ def getFighterDetails(fighterID):
     
     # return scraped details
     return fighterDetails
+
+if __name__ == '__main__':
+    
+    import unittest
+    
+    class TestSherdogScraper(unittest.TestCase):
+
+        def test_event_1(self):
+            e = getEventDetails(18346)
+            self.assertEqual(e['title'], u'UFC 141 - Lesnar vs. Overeem')
+            self.assertEqual(e['venue'], u'MGM Grand Garden Arena')
+            self.assertEqual(e['city'], 'Las Vegas, Nevada, United States')
+            self.assertEqual(e['date'], '2011-12-30')
+            self.assertEqual(e['fights'], 'Alistair Overeem vs. Brock Lesnar\nNate Diaz vs. Donald Cerrone\nJohny Hendricks vs. Jon Fitch\nAlexander Gustafsson vs. Vladimir Matyushenko\nJim Hettes vs. Nam Phan\nRoss Pearson vs. Junior Assuncao\nDanny Castillo vs. Anthony Njokuani\nDong Hyun Kim vs. Sean Pierson\nJacob Volkmann vs. Efrain Escudero\nDiego Nunes vs. Manny Gamburyan')
+            self.assertEqual(e['fighters'], sorted(['25981', '5185', '24765', '16555', '16374', '573', '26070', '7540', '11884', '10380', '48046', '5778', '26162', '435', '24539', '4865', '11451', '15105', '461', '17522']))
+
+        def test_fighter1(self):
+            f = getFighterDetails(2326)
+            self.assertEqual(f['name'], 'Mirko Filipovic')
+            self.assertEqual(f['nickName'], 'Cro Cop')
+            self.assertEqual(f['association'], 'Cro Cop Squad Gym')
+            self.assertEqual(f['height'], u'6\'2" (187.96 cm)')
+            self.assertEqual(f['weight'], '227 lbs (102.97 kg)')
+            self.assertEqual(f['birthDate'], '1974-09-10')
+            self.assertEqual(f['city'], 'Zagreb')
+            self.assertEqual(f['country'], 'Croatia')
+
+        def test_fighter2(self):
+            f = getFighterDetails(26498)
+            self.assertEqual(f['name'], 'Deray Davis')
+            self.assertEqual(f['nickName'], '')
+            self.assertEqual(f['association'], 'Team Corral')
+            self.assertEqual(f['height'], u'0\'0" (0 cm)')
+            self.assertEqual(f['weight'], '170 lbs (77.11 kg)')
+            self.assertEqual(f['birthDate'], 'N/A')
+            self.assertEqual(f['city'], '')
+            self.assertEqual(f['country'], '')
+
+    unittest.main()
