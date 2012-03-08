@@ -53,7 +53,7 @@ def getAllFighters():
     log('Retrieving details of all fighters from database')
     with storageDB:
         cur = storageDB.cursor()
-        cur.execute("SELECT DISTINCT fighters.*, COUNT(*) AS cnt FROM fighters INNER JOIN fights ON (fights.fighter1=fighters.fighterID OR fights.fighter2=fighters.fighterID) GROUP BY fighters.fighterID ORDER BY fighters.name")
+        cur.execute("SELECT DISTINCT fighters.*, COUNT(*) AS cnt FROM fighters INNER JOIN fights ON (fights.fighterID=fighters.fighterID) GROUP BY fighters.fighterID ORDER BY fighters.name")
         result = cur.fetchall()
     return result
 

@@ -101,7 +101,7 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     except IOError:
         description = outline
     log("Adding: Event: %s: %s" % (eventDate, eventTitle))
-    description = description + '\n\n' + fighterList
+    description = description + '\n\n' + fighterList.encode('utf-8')
     u = sys.argv[0] + "?path=/getEvent/%s" % eventID
     li=xbmcgui.ListItem(label = "[%s] %s" % (eventDate, eventTitle), iconImage = thumbPath, thumbnailImage = thumbPath)
     li.setInfo( type="Video", infoLabels={ "title": eventTitle, "plot": description, "plotoutline": outline, "cast": fighterList.split('\n'), "genre": eventPromotion, "date": eventDate, "year": int(eventDate.split('-')[0]), "premiered": eventDate, "tvshowtitle": eventTitle} )
