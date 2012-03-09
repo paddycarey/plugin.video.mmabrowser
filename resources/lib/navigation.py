@@ -61,14 +61,14 @@ def getEventsByOrganisation(organisation):
 
 def browseByFighter():
     log('Browsing: Fighters')
-    dbList = dbops.getAllFighters()
+    dbList = dbops.getFighters()
     totalFighters = len(dbList)
     for fighter in dbList:
         addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalFighters, fighter[9])
 
 def getEventsByFighter(fighterID):
     log('Listing all events for: %s' % fighterID)
-    dbList = dbops.getEventsByFighter(fighterID)
+    dbList = dbops.getEvents(fighterID = fighterID)
     totalEvents = len(dbList)
     for event in dbList:
         for x in library.loadLibrary():
@@ -80,9 +80,9 @@ def searchAll():
     log('Searching MMA Library')
     searchStr = getUserInput(title = "Search MMA Library")
     if searchStr:
-        dbList = dbops.searchEvents(searchStr)
+        dbList = dbops.getEvents(searchStr = searchStr)
         totalEvents = len(dbList)
-        dbList2 = dbops.searchFighters(searchStr)
+        dbList2 = dbops.getFighters(searchStr = searchStr)
         totalFighters = len(dbList2)
         totalListItems = totalEvents + totalFighters
         for event in dbList:
@@ -94,7 +94,7 @@ def searchAll():
             addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalListItems, fighter[9])
 
 def getEvent(eventID):
-    event = dbops.getEvent(eventID)
+    event = dbops.getEvents(eventID = eventID)[0]
     log('Listing video files for event: %s' % event[1])
     for x in library.loadLibrary():
         if event[0] == x['ID']:

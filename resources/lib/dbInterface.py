@@ -5,7 +5,6 @@ import os
 import sqlite3
 import xbmc
 import xbmcaddon
-import xbmcvfs
 
 # import logging function
 from resources.lib.utils import log
