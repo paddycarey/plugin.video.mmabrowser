@@ -34,7 +34,9 @@ def updateLibrary():
     import resources.lib.library as library
     library.dialog.create(__addonname__, "MMA Browser", "Loading")
     library.scanLibrary()
-    library.getMissingData()
+    library.initLibrary()
+    library.getMissingEvents()
+    library.getMissingFighters()
     if __addon__.getSetting("checkMissingExtras") == 'true':
         library.getMissingExtras()
     library.dialog.close()

@@ -137,81 +137,125 @@ def loadLibrary():
         library.append(event)
     return library
 
-def getMissingData():
-    with storageDB:
-        cur = storageDB.cursor()
-        try:
-            ##attempt to load tables from db
-            getData("SELECT * from events")
-            getData("SELECT * from fights")
-            getData("SELECT * from fighters")
-        except sqlite3.Error, e:
-            __addon__.setSetting(id="forceFullRescan", value='true')
-            log('SQLite Error: %s' % e.args[0])
-            log('Unable to load tables from database: rescanning')
-            log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
-        if __addon__.getSetting("forceFullRescan") == 'true':
-            setData("DROP TABLE IF EXISTS events")
-            setData("CREATE TABLE events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
-            setData("DROP TABLE IF EXISTS fighters")
-            setData("CREATE TABLE fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
-            setData("DROP TABLE IF EXISTS fights")
-            setData("CREATE TABLE fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
-            __addon__.setSetting(id="forceFullRescan", value='false')
 
-        maxRetries = 2
-        log('#################################')
+def initLibrary():
+    try:
+        ##attempt to load tables from db
+        getData("SELECT * from events")
+        getData("SELECT * from fights")
+        getData("SELECT * from fighters")
+    except sqlite3.Error, e:
+        __addon__.setSetting(id="forceFullRescan", value='true')
+        log('SQLite Error: %s' % e.args[0])
+        log('Unable to load tables from database: rescanning')
+        log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
+    if __addon__.getSetting("forceFullRescan") == 'true':
+        setData("DROP TABLE IF EXISTS events")
+        setData("CREATE TABLE events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
+        setData("DROP TABLE IF EXISTS fighters")
+        setData("CREATE TABLE fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
+        setData("DROP TABLE IF EXISTS fights")
+        setData("CREATE TABLE fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
+        __addon__.setSetting(id="forceFullRescan", value='false')
 
-        ## for every new event in library retrieve details from sherdog.com
-        storedIDs = getData("SELECT DISTINCT eventID FROM events")
-        libItemCount = 0
-        libraryList = loadLibrary()
-        for libraryItem in libraryList:
-            if not dialog.iscanceled():
-                libItemCount = libItemCount + 1
-                scannedID = unicode(libraryItem['ID'])
-                if not (scannedID,) in storedIDs:
-                    retries = 0
-                    while retries < maxRetries:
-                        try:
-                            dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % libraryItem['ID'], "Path: %s" % libraryItem['path'])
-                            log('Retrieving event details from sherdog.com: (%s) %s' % (libraryItem['ID'], os.path.dirname(libraryItem['path'])))
-                            event = getEventDetails(int(libraryItem['ID']))
-                            log('Event ID:       %s' % event['ID'])
-                            log('Event Title:    %s' % event['title'].replace('\'', ''))
-                            log('Event Promoter: %s' % event['promotion'].replace('\'', ''))
-                            log('Event Date:     %s' % event['date'])
-                            log('Event Venue:    %s' % event['venue'].replace('\'', ''))
-                            log('Event City:     %s' % event['city'].replace('\'', ''))
-                            cur.execute("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', ''), event['fights'].replace('\'', '')))
-                            for fighter in event['fighters']:
-                                cur.execute("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter))
-                                cur.execute("SELECT fighterID from fighters")
-                                fighters = cur.fetchall()
-                                if not (fighter,) in fighters:
-                                    dialog.update(int((libItemCount / float(len(libraryList))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
-                                    log('## Retrieving fighter details from sherdog.com: %s' % fighter)
-                                    fighterDetails = getFighterDetails(int(fighter))
-                                    log('Fighter ID:       %s' % fighterDetails['ID'])
-                                    log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
-                                    log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
-                                    log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
-                                    log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
-                                    log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
-                                    log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
-                                    log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
-                                    log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
-                                    log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
-                                    cur.execute("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (fighterDetails['ID'], fighterDetails['name'].replace('\'', ''), fighterDetails['nickName'].replace('\'', ''), fighterDetails['association'].replace('\'', ''), fighterDetails['height'].replace('\'', ''), fighterDetails['weight'].replace('\'', ''), fighterDetails['birthDate'], fighterDetails['city'].replace('\'', ''), fighterDetails['country'].replace('\'', ''), fighterDetails['thumbUrl']))
-                            log('Retrieved event details from sherdog.com: %s' % libraryItem['ID'])
-                            storageDB.commit()
-                        except:
-                            retries = retries + 1
-                            log(str(traceback.format_exc()))
-                            log('Error adding event to database: %s' % libraryItem['ID'])
-                            log('Rolling back database to clean state')
-                            storageDB.rollback()
-                        else:
-                            retries = 0
-                            log('#################################')
-                            break
+
+def getMissingEvents():
+
+    eventCount = 1
+
+    # retrieve list of already scanned events
+    storedIDList = getData("SELECT DISTINCT eventID FROM events")
+    storedIDs = []
+    for x in storedIDList:
+        storedIDs.append(x['eventID'])
+
+    # retrieve list of all events
+    libraryList = loadLibrary()
+    libraryIDs = []
+    for x in libraryList:
+        libraryIDs.append(x['ID'])
+    
+    # retrieve list of events that need to be scanned
+    unscannedEvents = []
+    for event in libraryIDs:
+        if not event in storedIDs:
+            unscannedEvents.append(event)
+
+    for eventID in unscannedEvents:
+        dialog.update(int((eventCount / float(len(unscannedEvents))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % eventID)
+        log('Retrieving event details from sherdog.com: %s' % eventID)
+        event = getEventDetails(int(eventID))
+        log('Event ID:       %s' % event['ID'])
+        log('Event Title:    %s' % event['title'].replace('\'', ''))
+        log('Event Promoter: %s' % event['promotion'].replace('\'', ''))
+        log('Event Date:     %s' % event['date'])
+        log('Event Venue:    %s' % event['venue'].replace('\'', ''))
+        log('Event City:     %s' % event['city'].replace('\'', ''))
+        setData("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', ''), event['fights'].replace('\'', '')))
+        for fighter in event['fighters']:
+            setData("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter))
+        log('Retrieved event details from sherdog.com: %s' % eventID)
+
+
+def getMissingFighters():
+    
+    fighterCount = 1
+    
+    # get list of already scanned fighters
+    scannedFighterList = getData("SELECT fighterID from fighters")
+    scannedFighters = []
+    for x in scannedFighterList:
+        scannedFighters.append(x['fighterID'])
+
+    # get list of all fighters (scanned and unscanned)
+    allFighterList = getData("SELECT DISTINCT fighterID from fights")
+    allFighters = []
+    for x in allFighterList:
+        allFighters.append(x['fighterID'])
+
+    # get list of fighters that need to be scraped
+    unscannedFighters = []
+    for fighter in allFighters:
+        if not fighter in scannedFighters:
+            unscannedFighters.append(fighter)
+
+    # scrape data for fighters in unscanned list
+    for fighter in unscannedFighters:
+        
+        # update onscreen progress dialog
+        dialog.update(int((fighterCount / float(len(unscannedFighters))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
+        # print status to log
+        log('## Retrieving fighter details from sherdog.com: %s' % fighter)
+        
+        # retrieve fighter details from sherdog.com
+        fighterDetails = getFighterDetails(int(fighter))
+        
+        # print fighter details to log
+        log('Fighter ID:       %s' % fighterDetails['ID'])
+        log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
+        log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
+        log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
+        log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
+        log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
+        log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
+        log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
+        log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
+        log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
+        
+        # construct tuple of arguments for use in constructing sql query
+        fighterTuple = (fighterDetails['ID'], 
+                        fighterDetails['name'].replace('\'', ''),
+                        fighterDetails['nickName'].replace('\'', ''),
+                        fighterDetails['association'].replace('\'', ''),
+                        fighterDetails['height'].replace('\'', ''),
+                        fighterDetails['weight'].replace('\'', ''),
+                        fighterDetails['birthDate'],
+                        fighterDetails['city'].replace('\'', ''),
+                        fighterDetails['country'].replace('\'', ''),
+                        fighterDetails['thumbUrl'])
+        
+        # perform sql query
+        setData("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % fighterTuple)
+        
+        # increment fighter count
+        fighterCount = fighterCount + 1
