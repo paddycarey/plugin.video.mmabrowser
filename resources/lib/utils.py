@@ -120,7 +120,7 @@ def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAs
     li.setProperty( "TotalSeasons", '1' )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True, totalItems = int(totalFighters))
 
-def addPromotion(promotionName, eventCount):
+def addPromotion(promotionName, eventCount = 1):
     
     if __addon__.getSetting("useBanners") == 'true':
         promotionThumb = promotionName + '-banner.jpg'

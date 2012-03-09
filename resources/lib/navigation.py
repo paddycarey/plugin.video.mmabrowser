@@ -6,7 +6,7 @@ import xbmcaddon
 import xbmcvfs
 
 from resources.lib.utils import *
-import resources.lib.databaseops as dbops
+import resources.lib.dbOps as dbops
 import resources.lib.library as library
 
 try:
@@ -35,7 +35,7 @@ def mainMenu():
 
 def allEvents():
     log('Browsing: All events')
-    dbList = dbops.getAllEvents()
+    dbList = dbops.getEvents()
     totalEvents = len(dbList)
     for event in dbList:
         for x in library.loadLibrary():
@@ -45,16 +45,17 @@ def allEvents():
 
 def browseByOrganisation():
     log('Browsing: Organisations')
-    for promotion in dbops.getAllPromotions():
-        addPromotion(promotion[0], dbops.getEventCount(promotion[0]))
+    for promotion in dbops.getPromotions():
+        eventCount = dbops.getCounts(promotion = promotion['promotion'])[0]['cnt']
+        addPromotion(promotion['promotion'], eventCount)
 
 def getEventsByOrganisation(organisation):
     log('Listing all events for: %s' % organisation)
-    dbList = dbops.getEventsByPromotion(organisation)
+    dbList = dbops.getEvents(promotion = organisation)
     totalEvents = len(dbList)
     for event in dbList:
         for x in library.loadLibrary():
-            if event[0] == x['ID']:
+            if event['eventID'] == x['ID']:
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
