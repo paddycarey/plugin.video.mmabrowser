@@ -37,8 +37,9 @@ def allEvents():
     log('Browsing: All events')
     dbList = dbops.getEvents()
     totalEvents = len(dbList)
+    libraryList = library.loadLibrary()
     for event in dbList:
-        for x in library.loadLibrary():
+        for x in libraryList:
             if event[0] == x['ID']:
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
@@ -53,8 +54,9 @@ def getEventsByOrganisation(organisation):
     log('Listing all events for: %s' % organisation)
     dbList = dbops.getEvents(promotion = organisation)
     totalEvents = len(dbList)
+    libraryList = library.loadLibrary()
     for event in dbList:
-        for x in library.loadLibrary():
+        for x in libraryList:
             if event['eventID'] == x['ID']:
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
@@ -70,8 +72,9 @@ def getEventsByFighter(fighterID):
     log('Listing all events for: %s' % fighterID)
     dbList = dbops.getEvents(fighterID = fighterID)
     totalEvents = len(dbList)
+    libraryList = library.loadLibrary()
     for event in dbList:
-        for x in library.loadLibrary():
+        for x in libraryList:
             if event[0] == x['ID']:
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
@@ -85,8 +88,9 @@ def searchAll():
         dbList2 = dbops.getFighters(searchStr = searchStr)
         totalFighters = len(dbList2)
         totalListItems = totalEvents + totalFighters
+        libraryList = library.loadLibrary()
         for event in dbList:
-            for x in library.loadLibrary():
+            for x in libraryList:
                 if event[0] == x['ID']:
                     addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalListItems)
                     break

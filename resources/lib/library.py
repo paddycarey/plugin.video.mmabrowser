@@ -18,10 +18,10 @@ if sys.version_info < (2, 7):
 else:
      import simplejson
 
-import resources.lib.databaseops as dbops
 from resources.lib.utils import *
 from resources.lib.sherdog import *
-
+# import necessary functions
+from resources.lib.dbInterface import getData, setData
 ### get addon info
 __addon__             = xbmcaddon.Addon()
 __addonid__           = __addon__.getAddonInfo('id')
@@ -39,11 +39,6 @@ __promotionDir__      = os.path.join(__addondir__, 'promotions')
 __artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
 
 forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
-
-## initialise database
-__dbVersion__ = 0.2
-storageDBPath = os.path.join(__addondir__, 'storage-%s.db' % __dbVersion__)
-storageDB = sqlite3.connect(storageDBPath)
 
 dialog = xbmcgui.DialogProgress()
 
@@ -101,50 +96,45 @@ def getMissingExtras():
 def scanLibrary():
     ## scan libraryPath for directories containing sherdogEventID files
     log('Scanning library for event IDs/paths')
-    with storageDB:
-        cur = storageDB.cursor()
-        cur.execute("DROP TABLE IF EXISTS library")
-        cur.execute("CREATE TABLE library(ID TEXT, path TEXT)")
-        idFiles = ['sherdogEventID', 'sherdogEventID.nfo']
-        dirList = []
-        dirList = getDirList(__addon__.getSetting("libraryPath"))
-        dirCount = 0
-        for x in dirList:
-            if not dialog.iscanceled():
-                dirCount = dirCount + 1
-                dialog.update(int((dirCount / float(len(dirList))) * 100), "Scanning MMA Library for event ID files", x)
-                for idFile in idFiles:
-                    pathIdFile = os.path.join(x, idFile)
-                    if xbmcvfs.exists(pathIdFile):
-                        event = {}
-                        try:
-                            event['ID'] = open(pathIdFile).read()
-                        except IOError:
-                            tmpID = os.path.join(__addondir__, 'tmpID')
-                            if xbmcvfs.copy(pathIdFile, tmpID):
-                                event['ID'] = open(tmpID).read()
-                                xbmcvfs.delete(tmpID)
-                            else:
-                                event['ID'] = ''
-                        event['ID'] = event['ID'].replace('\n', '')
-                        event['path'] = x
-                        if not event['ID'] == '':
-                            log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
-                            cur.execute('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+    setData("DROP TABLE IF EXISTS library")
+    setData("CREATE TABLE library(ID TEXT, path TEXT)")
+    idFiles = ['sherdogEventID', 'sherdogEventID.nfo']
+    dirList = []
+    dirList = getDirList(__addon__.getSetting("libraryPath"))
+    dirCount = 0
+    for x in dirList:
+        if not dialog.iscanceled():
+            dirCount = dirCount + 1
+            dialog.update(int((dirCount / float(len(dirList))) * 100), "Scanning MMA Library for event ID files", x)
+            for idFile in idFiles:
+                pathIdFile = os.path.join(x, idFile)
+                if xbmcvfs.exists(pathIdFile):
+                    event = {}
+                    try:
+                        event['ID'] = open(pathIdFile).read()
+                    except IOError:
+                        tmpID = os.path.join(__addondir__, 'tmpID')
+                        if xbmcvfs.copy(pathIdFile, tmpID):
+                            event['ID'] = open(tmpID).read()
+                            xbmcvfs.delete(tmpID)
                         else:
-                            log('Event ID file found but was empty : %s' % event['path'])
-                        break
+                            event['ID'] = ''
+                    event['ID'] = event['ID'].replace('\n', '')
+                    event['path'] = x
+                    if not event['ID'] == '':
+                        log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
+                        setData('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+                    else:
+                        log('Event ID file found but was empty : %s' % event['path'])
+                    break
 
 def loadLibrary():
-    with storageDB:
-        cur = storageDB.cursor()
-        cur.execute("SELECT * FROM library")
-        library = []
-        for x in cur.fetchall():
-            event = {}
-            event['ID'] = x[0]
-            event['path'] = x[1]
-            library.append(event)
+    library = []
+    for x in getData("SELECT * FROM library"):
+        event = {}
+        event['ID'] = x[0]
+        event['path'] = x[1]
+        library.append(event)
     return library
 
 def getMissingData():
@@ -152,29 +142,28 @@ def getMissingData():
         cur = storageDB.cursor()
         try:
             ##attempt to load tables from db
-            cur.execute("SELECT * from events")
-            cur.execute("SELECT * from fights")
-            cur.execute("SELECT * from fighters")
+            getData("SELECT * from events")
+            getData("SELECT * from fights")
+            getData("SELECT * from fighters")
         except sqlite3.Error, e:
             __addon__.setSetting(id="forceFullRescan", value='true')
             log('SQLite Error: %s' % e.args[0])
             log('Unable to load tables from database: rescanning')
             log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
         if __addon__.getSetting("forceFullRescan") == 'true':
-            cur.execute("DROP TABLE IF EXISTS events")
-            cur.execute("CREATE TABLE events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
-            cur.execute("DROP TABLE IF EXISTS fighters")
-            cur.execute("CREATE TABLE fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
-            cur.execute("DROP TABLE IF EXISTS fights")
-            cur.execute("CREATE TABLE fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
+            setData("DROP TABLE IF EXISTS events")
+            setData("CREATE TABLE events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
+            setData("DROP TABLE IF EXISTS fighters")
+            setData("CREATE TABLE fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
+            setData("DROP TABLE IF EXISTS fights")
+            setData("CREATE TABLE fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
             __addon__.setSetting(id="forceFullRescan", value='false')
 
         maxRetries = 2
         log('#################################')
 
         ## for every new event in library retrieve details from sherdog.com
-        cur.execute("SELECT DISTINCT eventID FROM events")
-        storedIDs = cur.fetchall()
+        storedIDs = getData("SELECT DISTINCT eventID FROM events")
         libItemCount = 0
         libraryList = loadLibrary()
         for libraryItem in libraryList:
