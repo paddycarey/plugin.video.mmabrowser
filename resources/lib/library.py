@@ -195,6 +195,7 @@ def getMissingEvents():
         for fighter in event['fighters']:
             setData("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter))
         log('Retrieved event details from sherdog.com: %s' % eventID)
+        eventCount = eventCount + 1
 
 
 def getMissingFighters():
