@@ -3,6 +3,7 @@
 # import necessary modules
 import os
 import sqlite3
+import traceback
 import xbmc
 import xbmcaddon
 
@@ -50,7 +51,7 @@ def getData(sqlQuery):
     return results
 
 
-def setData(sqlQuery):
+def setData(sqlQuery = '', deferCommit = False):
     
     # print query to log
     log('SQL (setData): Running Query: %s' % sqlQuery)
@@ -61,12 +62,14 @@ def setData(sqlQuery):
     
             # get cursor
             cur = storageDB.cursor()  
-    
-            # perform sql query
-            cur.execute(sqlQuery)
             
-            # commit to database
-            storageDB.commit()
+            if not sqlQuery == '':
+                # perform sql query
+                cur.execute(sqlQuery)
+            
+            if not deferCommit:
+                # commit to database
+                storageDB.commit()
         
         except:
         

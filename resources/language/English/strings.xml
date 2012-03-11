@@ -4,6 +4,5 @@
         <string id="32002">MMA Library Path</string>
         <string id="32003">Use banners instead of posters for Promotion thumbs</string>
         <string id="32006">Clean Filenames (See README for info)</string>
-        <string id="32004">Check for missing artwork/info on startup</string>
-        <string id="32005">Force full rescan on next startup</string>
+        <string id="32005">Force full rescan on next update</string>
 </strings>

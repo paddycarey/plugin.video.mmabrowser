@@ -191,10 +191,22 @@ def getMissingEvents():
         log('Event Date:     %s' % event['date'])
         log('Event Venue:    %s' % event['venue'].replace('\'', ''))
         log('Event City:     %s' % event['city'].replace('\'', ''))
-        setData("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (event['ID'], event['title'].replace('\'', ''), event['promotion'].replace('\'', ''), event['date'], event['venue'].replace('\'', ''), event['city'].replace('\'', ''), event['fights'].replace('\'', '')))
-        for fighter in event['fighters']:
-            setData("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter))
-        log('Retrieved event details from sherdog.com: %s' % eventID)
+        eventTuple = (  event['ID'],
+                        event['title'].replace('\'', ''),
+                        event['promotion'].replace('\'', ''),
+                        event['date'], event['venue'].replace('\'', ''),
+                        event['city'].replace('\'', ''),
+                        event['fights'].replace('\'', ''))
+        # execute sql to add data to dataset
+        if setData("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % eventTuple, deferCommit = True):
+            for fighter in event['fighters']:
+                if not setData("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter), deferCommit = True):
+                    break
+            log('Retrieved event details from sherdog.com: %s' % eventID)
+            # committing event to database
+            setData()
+        else:
+            log('Error Retrieving event details from sherdog.com: %s' % eventID)
         eventCount = eventCount + 1
 
 
