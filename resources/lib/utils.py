@@ -3,7 +3,6 @@
 import os
 import socket
 import sys
-
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -11,6 +10,7 @@ import xbmcplugin
 import xbmcvfs
 
 from urllib2 import urlopen
+
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
@@ -27,13 +27,16 @@ __fighterDir__        = os.path.join(__addondir__, 'fighters')
 __fightDir__        = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 
+
 ## create directories needed for script operation
 for neededDir in [__addondir__, __thumbDir__, __fighterDir__, __fightDir__, __promotionDir__]:
         xbmcvfs.mkdir(neededDir)
 
+
 ### adjust default timeout to stop script hanging
 timeout = 20
 socket.setdefaulttimeout(timeout)
+
 
 def get_params():
         param=[]
@@ -53,6 +56,7 @@ def get_params():
                                 
         return param
 
+
 def getUniq(seq): 
     seen = []
     result = []
@@ -61,6 +65,7 @@ def getUniq(seq):
         seen.append(item)
         result.append(item)
     return result
+
 
 def addLink(linkName = '', plot = '', url = '', thumbPath = '', fanartPath = '', plotoutline = '', genre = '', date = '', playable = 'true', tvshowtitle = ''):
     if not xbmcvfs.exists(thumbPath):
@@ -73,6 +78,7 @@ def addLink(linkName = '', plot = '', url = '', thumbPath = '', fanartPath = '',
     li.setProperty( "Fanart_Image", fanartPath)
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = url, listitem = li, isFolder = False)
 
+
 def addDir(dirName, targetPath, thumbPath, fanartPath, description):
     if not xbmcvfs.exists(thumbPath):
         thumbPath = "DefaultFolder.png"
@@ -83,6 +89,7 @@ def addDir(dirName, targetPath, thumbPath, fanartPath, description):
     li.setInfo( type="Video", infoLabels={ "Title": dirName , "Plot": description})
     li.setProperty( "Fanart_Image", fanartPath)
     xbmcplugin.addDirectoryItem(handle = __addonidint__ , url = u, listitem = li, isFolder = True)
+
 
 def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '', eventVenue = '', eventCity = '', fighterList = '', totalEvents = 0):
     thumbPath = os.path.join(__thumbDir__, '%s-poster.jpg' % eventID)
@@ -108,6 +115,7 @@ def addEvent(eventID = '', eventTitle = '', eventPromotion = '', eventDate = '',
     li.setProperty( "Fanart_Image", fanartPath )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True, totalItems = int(totalEvents))
 
+
 def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAssociation = '', fighterHeight = '', fighterWeight = '', fighterBirthDate = '', fighterCity = '', fighterCountry = '', fightCount = '', totalFighters = '', thumbURL = ''):
     fanartPath = os.path.join(__addonpath__, 'fanart.jpg')
     description = "Name: %s\nNickname: %s\nCamp/Association: %s\nHeight: %s\nWeight: %s\nDOB: %s\nCity: %s\nCountry: %s" % (fighterName, fighterNickname, fighterAssociation, fighterHeight, fighterWeight, fighterBirthDate, fighterCity, fighterCountry)
@@ -119,6 +127,7 @@ def addFighter(fighterID = '', fighterName = '', fighterNickname = '', fighterAs
     li.setProperty( "TotalEpisodes", str(fightCount) )
     li.setProperty( "TotalSeasons", '1' )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True, totalItems = int(totalFighters))
+
 
 def addPromotion(promotionName, eventCount = 1):
     
@@ -149,13 +158,10 @@ def addPromotion(promotionName, eventCount = 1):
     li.setProperty( "TotalSeasons", '1' )
     xbmcplugin.addDirectoryItem(handle = __addonidint__, url = u, listitem = li, isFolder = True)
 
+
 # This function raises a keyboard for user input
 def getUserInput(title = "Input", default="", hidden=False):
     result = None
-
-    # Fix for when this functions is called with default=None
-    if not default:
-        default = ""
 
     keyboard = xbmc.Keyboard(default, title)
     keyboard.setHiddenInput(hidden)
@@ -166,8 +172,8 @@ def getUserInput(title = "Input", default="", hidden=False):
 
     return result
 
-def downloadFile(url, filePath):
 
+def downloadFile(url, filePath):
     """
     Download url to filePath.
     """

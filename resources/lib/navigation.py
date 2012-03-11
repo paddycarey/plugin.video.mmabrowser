@@ -6,13 +6,8 @@ import xbmcaddon
 import xbmcvfs
 
 from resources.lib.utils import *
-import resources.lib.dbOps as dbops
 import resources.lib.library as library
 
-try:
-    import StorageServer
-except:
-    import storageserverdummy as StorageServer
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
@@ -22,8 +17,6 @@ __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __thumbDir__          = os.path.join(__addondir__, 'events')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
 
-# initialise cache object to speed up plugin operation
-cache = StorageServer.StorageServer(__addonid__ + '-fightlists', 24*7)
 
 def mainMenu():
     log('Showing main menu')
@@ -33,9 +26,10 @@ def mainMenu():
     addDir("Search", "/search/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Search all items in your library")
     addDir("Update Library", "/update/", os.path.join(__addonpath__, "resources", "images", "generic_poster.jpg"), "", "Scan your library for new events")
 
+
 def allEvents():
     log('Browsing: All events')
-    dbList = dbops.getEvents()
+    dbList = library.getEvents()
     totalEvents = len(dbList)
     libraryList = library.loadLibrary()
     for event in dbList:
@@ -44,15 +38,17 @@ def allEvents():
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
+
 def browseByOrganisation():
     log('Browsing: Organisations')
-    for promotion in dbops.getPromotions():
-        eventCount = dbops.getCounts(promotion = promotion['promotion'])[0]['cnt']
+    for promotion in library.getPromotions():
+        eventCount = library.getCounts(promotion = promotion['promotion'])[0]['cnt']
         addPromotion(promotion['promotion'], eventCount)
+
 
 def getEventsByOrganisation(organisation):
     log('Listing all events for: %s' % organisation)
-    dbList = dbops.getEvents(promotion = organisation)
+    dbList = library.getEvents(promotion = organisation)
     totalEvents = len(dbList)
     libraryList = library.loadLibrary()
     for event in dbList:
@@ -61,16 +57,18 @@ def getEventsByOrganisation(organisation):
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
+
 def browseByFighter():
     log('Browsing: Fighters')
-    dbList = dbops.getFighters()
+    dbList = library.getFighters()
     totalFighters = len(dbList)
     for fighter in dbList:
         addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalFighters, fighter[9])
 
+
 def getEventsByFighter(fighterID):
     log('Listing all events for: %s' % fighterID)
-    dbList = dbops.getEvents(fighterID = fighterID)
+    dbList = library.getEvents(fighterID = fighterID)
     totalEvents = len(dbList)
     libraryList = library.loadLibrary()
     for event in dbList:
@@ -79,13 +77,14 @@ def getEventsByFighter(fighterID):
                 addEvent(event[0], event[1], event[2], event[3], event[4], event[5], event[6], totalEvents)
                 break
 
+
 def searchAll():
     log('Searching MMA Library')
     searchStr = getUserInput(title = "Search MMA Library")
     if searchStr:
-        dbList = dbops.getEvents(searchStr = searchStr)
+        dbList = library.getEvents(searchStr = searchStr)
         totalEvents = len(dbList)
-        dbList2 = dbops.getFighters(searchStr = searchStr)
+        dbList2 = library.getFighters(searchStr = searchStr)
         totalFighters = len(dbList2)
         totalListItems = totalEvents + totalFighters
         libraryList = library.loadLibrary()
@@ -97,8 +96,9 @@ def searchAll():
         for fighter in dbList2:
             addFighter(fighter[0], fighter[1], fighter[2], fighter[3], fighter[4], fighter[5], fighter[6], fighter[7], fighter[8], fighter[10], totalListItems, fighter[9])
 
+
 def getEvent(eventID):
-    event = dbops.getEvents(eventID = eventID)[0]
+    event = library.getEvents(eventID = eventID)[0]
     log('Listing video files for event: %s' % event[1])
     for x in library.loadLibrary():
         if event[0] == x['ID']:
@@ -118,8 +118,8 @@ def getEvent(eventID):
             for vidFile in fileList:
                 addLink(linkName = vidFile['title'], plotoutline = outline, plot = description, url = vidFile['path'], thumbPath = thumbPath, fanartPath = fanartPath, genre = event[1], tvshowtitle = event[1])
 
-def getVideoList(rootDir):
 
+def getVideoList(rootDir):
     stackCounter = 1
     activeStack = ''
     fileList = []
