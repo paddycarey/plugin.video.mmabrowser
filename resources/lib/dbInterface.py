@@ -29,6 +29,8 @@ def getData(sqlQuery):
     # print query to log
     log('SQL (getData): Running Query: %s' % sqlQuery)
     
+    results = []
+    
     with storageDB:
         
         # use dictionary cursor instead of standard cursor
@@ -37,15 +39,22 @@ def getData(sqlQuery):
         # get cursor
         cur = storageDB.cursor()
         
-        # perform sql query
-        cur.execute(sqlQuery)
+        try:
+            
+            # perform sql query
+            cur.execute(sqlQuery)
         
-        # get results of sql query
-        rows = cur.fetchall()
+            # get results of sql query
+            rows = cur.fetchall()
         
-        results = []
-        for row in rows:
-            results.append(row)
+            for row in rows:
+                results.append(row)
+
+        except:
+            
+            # print traceback to log
+            log(str(traceback.format_exc()), xbmc.LOGERROR)
+            log('SQL (getData): Error Executing Query: %s' % sqlQuery, xbmc.LOGERROR)
 
     # return results of query
     return results
@@ -74,10 +83,10 @@ def setData(sqlQuery = '', deferCommit = False):
         except:
         
             # print traceback to log
-            log(str(traceback.format_exc()))
+            log(str(traceback.format_exc()), xbmc.LOGERROR)
             
             # print error messages to log
-            log('SQL (setData): Error Executing Query')
+            log('SQL (setData): Error Executing Query: %s' % sqlQuery, xbmc.LOGERROR)
             log('Rolling back database to clean state')
             
             # rollback any uncommited queries

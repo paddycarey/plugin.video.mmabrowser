@@ -12,74 +12,26 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 
-# Use json instead of simplejson when python v2.7 or greater
-if sys.version_info < (2, 7):
-     import json as simplejson
-else:
-     import simplejson
-
-# import necessary functions
-from resources.lib.utils import *
-from resources.lib.sherdog import *
+## import necessary functions
+from resources.lib.utils import getDirList, getFileList, log
+from resources.lib.sherdog import getEventDetails, getFighterDetails
 from resources.lib.dbInterface import getData, setData
 
-### get addon info
+## get addon info
 __addon__             = xbmcaddon.Addon()
-__addonid__           = __addon__.getAddonInfo('id')
-__addonidint__        = int(sys.argv[1])
 __addonname__         = __addon__.getAddonInfo('name')
-__author__            = __addon__.getAddonInfo('author')
-__version__           = __addon__.getAddonInfo('version')
 __localize__          = __addon__.getLocalizedString
 __addonpath__         = __addon__.getAddonInfo('path')
 __addondir__          = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+
+## get artwork directories
 __thumbDir__          = os.path.join(__addondir__, 'events')
 __fighterDir__        = os.path.join(__addondir__, 'fighters')
-__fightDir__          = os.path.join(__addondir__, 'fights')
 __promotionDir__      = os.path.join(__addondir__, 'promotions')
-__artBaseURL__        = "http://mmaartwork.wackwack.co.uk/"
+__repoURL__        = "http://mmaartwork.wackwack.co.uk/"
 
-forceFullRescan = __addon__.getSetting("forceFullRescan") == 'true'
-
-dialog = xbmcgui.DialogProgress()
-
-
-def getDirList(path):
-    dirList = []
-    currentLevelDirList = [path]
-    while True:
-        prevLevelDirList = []
-        if len(currentLevelDirList) > 0:
-            for dirName in currentLevelDirList:
-                prevLevelDirList.append(dirName)
-                dirList.append(dirName)
-            currentLevelDirList = []
-        else:
-            break
-        for dirName in prevLevelDirList:
-            log('Checking for directories in: %s' % dirName)
-            json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } } , "id" : 1 }' % dirName.encode('utf-8').replace('\\', '\\\\'))
-            jsonobject = simplejson.loads(json_response)
-            if jsonobject['result']['files']:
-                for item in jsonobject['result']['files']:
-                    if item['filetype'] == 'directory':
-                        currentLevelDirList.append(item['file'])
-    return dirList
-
-
-def getFileList(path):
-    fileList = []
-    dirList = getDirList(path)
-    for dirName in dirList:
-        log('Checking for files in: %s' % dirName)
-        json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } , "media" : "video" } , "id" : 1 }' % dirName.encode('utf-8').replace('\\', '\\\\'))
-        jsonobject = simplejson.loads(json_response)
-        if jsonobject['result']['files']:
-            for item in jsonobject['result']['files']:
-                if item['filetype'] == 'file':
-                    fileList.append(item['file'])
-                    log('Found video: %s' % item['file'])
-    return fileList
+## initialise progress dialog
+dialogProgress = xbmcgui.DialogProgress()
 
 
 def getMissingExtras():
@@ -98,76 +50,162 @@ def getMissingExtras():
                 downloadFile(__artBaseURL__ + availableExtra, os.path.join(__addondir__, extraType, extraFilename))
 
 
-def scanLibrary():
-    ## scan libraryPath for directories containing sherdogEventID files
-    log('Scanning library for event IDs/paths')
+def updateLibrary():
+
+    ## print message to log
+    log('Updating Library')
+    
+    ## possible filenames for event ID files (subject to change)
+    idFiles = ['event.nfo', 'sherdogEventID.nfo', 'sherdogEventID']
+   
+    ## check if user has requested full rescan
+    if __addon__.getSetting("forceFullRescan") == 'true':
+        
+        ## drop all tables if user has selected full rescan
+        setData("DROP TABLE IF EXISTS events")
+        setData("DROP TABLE IF EXISTS fighters")
+        setData("DROP TABLE IF EXISTS fights")
+        
+        ## set setting to false after dropping tables
+        __addon__.setSetting(id="forceFullRescan", value='false')
+        
+    ## create metadata tables in database if they don't exist
+    setData("CREATE TABLE IF NOT EXISTS fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
+    setData("CREATE TABLE IF NOT EXISTS events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
+    setData("CREATE TABLE IF NOT EXISTS fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
+    
+    ## drop and recreate library (IDs, paths) table
     setData("DROP TABLE IF EXISTS library")
     setData("CREATE TABLE library(ID TEXT, path TEXT)")
-    idFiles = ['sherdogEventID', 'sherdogEventID.nfo']
-    dirList = []
-    dirList = getDirList(__addon__.getSetting("libraryPath"))
+    
+    ## show progress dialog
+    dialogProgress.create(__addonname__, __localize__(32026))
+    
+    ## set count of found directories to 0
     dirCount = 0
-    for x in dirList:
-        if not dialog.iscanceled():
-            dirCount = dirCount + 1
-            dialog.update(int((dirCount / float(len(dirList))) * 100), "Scanning MMA Library for event ID files", x)
+    
+    ## find all directories in configured library path
+    dirList = getDirList(__addon__.getSetting("libraryPath"))
+    
+    ## loop over all directories in configured library path
+    for directory in dirList:
+        
+        ## check if user has pressed cancel
+        if not dialogProgress.iscanceled():
+            
+            ## increment directory count
+            dirCount += 1
+            
+            ## update progress dialog
+            dialogProgress.update(int((dirCount / float(len(dirList))) * 100), __localize__(32031), directory, '')
+            
+            ## loop over possible filenames for event ID files (soon to be removed)
             for idFile in idFiles:
-                pathIdFile = os.path.join(x, idFile)
+                
+                ## construct path to ID file
+                pathIdFile = os.path.join(directory, idFile)
+                
+                ## check if ID file exists
                 if xbmcvfs.exists(pathIdFile):
-                    event = {}
+
                     try:
-                        event['ID'] = open(pathIdFile).read()
+                        
+                        ## attempt to open ID file and read ID
+                        eventID = open(pathIdFile).read()
+                    
                     except IOError:
+                        
+                        ## copy ID file locally if unable to open
                         tmpID = os.path.join(__addondir__, 'tmpID')
+                        
                         if xbmcvfs.copy(pathIdFile, tmpID):
-                            event['ID'] = open(tmpID).read()
+                            
+                            ## attempt to open ID file and read ID
+                            eventID = open(tmpID).read()
+                            
+                            ## delete temporary file
                             xbmcvfs.delete(tmpID)
+                            
                         else:
-                            event['ID'] = ''
-                    event['ID'] = event['ID'].replace('\n', '')
-                    event['path'] = x
-                    if not event['ID'] == '':
-                        log('Event ID/path found (%s): %s' % (event['ID'], event['path']))
-                        setData('INSERT INTO library VALUES("%s", "%s")' % (event['ID'], event['path']))
+                            
+                            ## set ID to empty string if unable to read ID file
+                            eventID = ''
+                    
+                    ## strip any newlines or whitespace from ID
+                    eventID = eventID.strip()
+                    
+                    ## check that ID is not blank
+                    if eventID == '':
+                        
+                        ## print error to log
+                        log('Event ID file found but was empty : %s' % directory, xbmc.LOGERROR)
+                        
                     else:
-                        log('Event ID file found but was empty : %s' % event['path'])
-                    break
+                        
+                        ## print details of found event to log
+                        log('Event ID/path found (%s): %s' % (eventID, directory))
+                        
+                        ## insert event ID and path into library table
+                        setData('INSERT INTO library VALUES("%s", "%s")' % (eventID, directory))
+                        
+                        ## stop checking for ID file if ID found
+                        break
+    
+    ## set event count to 1
+    eventCount = 1
+    
+    ## get list of unscanned event IDs
+    unscannedEvents = getMissingEvents()
+    
+    ## loop over list of unscanned events
+    for eventID in unscannedEvents:
 
+        ## check if user has pressed cancel
+        if not dialogProgress.iscanceled():
 
-def loadLibrary():
-    library = []
-    for x in getData("SELECT * FROM library"):
-        event = {}
-        event['ID'] = x[0]
-        event['path'] = x[1]
-        library.append(event)
-    return library
+            ## update progress dialog
+            dialogPercentage = int((eventCount / float(len(unscannedEvents))) * 100)
+            line1 = __localize__(32027)
+            line2 = '%s: %s' % (__localize__(32028), eventID)
+            line3 = ''
+            dialogProgress.update(dialogPercentage, line1, line2, line3)
+            
+            ## scrape event and add to databse
+            scanEvent(eventID)
+            
+            ## increment event count
+            eventCount += 1
+    
+    ## set fighter count to 1
+    fighterCount = 1
 
+    ## get list of unscanned event IDs
+    unscannedFighters = getMissingFighters()
 
-def initLibrary():
-    try:
-        ##attempt to load tables from db
-        getData("SELECT * from events")
-        getData("SELECT * from fights")
-        getData("SELECT * from fighters")
-    except sqlite3.Error, e:
-        __addon__.setSetting(id="forceFullRescan", value='true')
-        log('SQLite Error: %s' % e.args[0])
-        log('Unable to load tables from database: rescanning')
-        log('Performing full event scan: THIS MAY TAKE A VERY LONG TIME', xbmc.LOGWARNING)
-    if __addon__.getSetting("forceFullRescan") == 'true':
-        setData("DROP TABLE IF EXISTS events")
-        setData("CREATE TABLE events(eventID TEXT PRIMARY KEY, title TEXT, promotion TEXT, date TEXT, venue TEXT, city TEXT, fightList TEXT)")
-        setData("DROP TABLE IF EXISTS fighters")
-        setData("CREATE TABLE fighters(fighterID TEXT PRIMARY KEY, name TEXT, nickName TEXT, association TEXT, height TEXT, weight TEXT, birthDate TEXT, city TEXT, country TEXT, thumbURL TEXT)")
-        setData("DROP TABLE IF EXISTS fights")
-        setData("CREATE TABLE fights(eventID TEXT, fighterID TEXT, PRIMARY KEY (eventID, fighterID))")
-        __addon__.setSetting(id="forceFullRescan", value='false')
+    ## loop over list of unscanned fighter IDs
+    for fighter in unscannedFighters:
+        
+        ## check if user has pressed cancel
+        if not dialogProgress.iscanceled():
+            
+            # update onscreen progress dialog
+            dialogPercentage = int((fighterCount / float(len(unscannedFighters))) * 100)
+            line1 = __localize__(32029)
+            line2 = '%s: %s' % (__localize__(32030), fighter)
+            line3 = ''
+            dialogProgress.update(dialogPercentage, line1, line2, line3)
+    
+            ## scrape event and add to databse
+            scanFighter(fighter)
+            
+            ## increment event count
+            fighterCount += 1
+    
+    ## close progress dialog
+    dialogProgress.close()
 
 
 def getMissingEvents():
-
-    eventCount = 1
 
     # retrieve list of already scanned events
     storedIDList = getData("SELECT DISTINCT eventID FROM events")
@@ -176,7 +214,7 @@ def getMissingEvents():
         storedIDs.append(x['eventID'])
 
     # retrieve list of all events
-    libraryList = loadLibrary()
+    libraryList = getData("SELECT DISTINCT * FROM library")
     libraryIDs = []
     for x in libraryList:
         libraryIDs.append(x['ID'])
@@ -186,40 +224,13 @@ def getMissingEvents():
     for event in libraryIDs:
         if not event in storedIDs:
             unscannedEvents.append(event)
-
-    for eventID in unscannedEvents:
-        dialog.update(int((eventCount / float(len(unscannedEvents))) * 100), "Retrieving event details from Sherdog.com", "ID: %s" % eventID)
-        log('Retrieving event details from sherdog.com: %s' % eventID)
-        event = getEventDetails(int(eventID))
-        log('Event ID:       %s' % event['ID'])
-        log('Event Title:    %s' % event['title'].replace('\'', ''))
-        log('Event Promoter: %s' % event['promotion'].replace('\'', ''))
-        log('Event Date:     %s' % event['date'])
-        log('Event Venue:    %s' % event['venue'].replace('\'', ''))
-        log('Event City:     %s' % event['city'].replace('\'', ''))
-        eventTuple = (  event['ID'],
-                        event['title'].replace('\'', ''),
-                        event['promotion'].replace('\'', ''),
-                        event['date'], event['venue'].replace('\'', ''),
-                        event['city'].replace('\'', ''),
-                        event['fights'].replace('\'', ''))
-        # execute sql to add data to dataset
-        if setData("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % eventTuple, deferCommit = True):
-            for fighter in event['fighters']:
-                if not setData("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter), deferCommit = True):
-                    break
-            log('Retrieved event details from sherdog.com: %s' % eventID)
-            # committing event to database
-            setData()
-        else:
-            log('Error Retrieving event details from sherdog.com: %s' % eventID)
-        eventCount = eventCount + 1
+    
+    ## return list of IDs of all events which have not yet been scanned
+    return unscannedEvents
 
 
 def getMissingFighters():
-    
-    fighterCount = 1
-    
+        
     # get list of already scanned fighters
     scannedFighterList = getData("SELECT fighterID from fighters")
     scannedFighters = []
@@ -237,66 +248,116 @@ def getMissingFighters():
     for fighter in allFighters:
         if not fighter in scannedFighters:
             unscannedFighters.append(fighter)
+    
+    ## return list of unscanned fighter IDs
+    return unscannedFighters
 
-    # scrape data for fighters in unscanned list
-    for fighter in unscannedFighters:
+
+def scanEvent(eventID):
+
+    ## print status to log
+    log('Retrieving event details from sherdog.com: %s' % eventID)
+    
+    ## scrape evnt details from sherdog
+    event = getEventDetails(int(eventID))
+    
+    ## print event details to log
+    log('Event ID:       %s' % event['ID'])
+    log('Event Title:    %s' % event['title'].replace('\'', ''))
+    log('Event Promoter: %s' % event['promotion'].replace('\'', ''))
+    log('Event Date:     %s' % event['date'])
+    log('Event Venue:    %s' % event['venue'].replace('\'', ''))
+    log('Event City:     %s' % event['city'].replace('\'', ''))
+    
+    ## construct tuple of arguments to pass to sql statement
+    eventTuple = (  event['ID'],
+                    event['title'].replace('\'', ''),
+                    event['promotion'].replace('\'', ''),
+                    event['date'], event['venue'].replace('\'', ''),
+                    event['city'].replace('\'', ''),
+                    event['fights'].replace('\'', ''))
+    
+    ## execute sql to add data to dataset
+    if setData("INSERT INTO events VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % eventTuple, deferCommit = True):
         
-        # update onscreen progress dialog
-        dialog.update(int((fighterCount / float(len(unscannedFighters))) * 100), "Retrieving fighter details from Sherdog.com", "ID: %s" % fighter, "")
-        # print status to log
-        log('## Retrieving fighter details from sherdog.com: %s' % fighter)
+        ## loop over all fighters on event
+        for fighter in event['fighters']:
+            
+            ## insert fight record into fights table
+            if not setData("INSERT INTO fights VALUES('%s', '%s')" % (event['ID'], fighter), deferCommit = True):
+                
+                ## break if unable to add to database
+                break
         
-        # retrieve fighter details from sherdog.com
-        fighterDetails = getFighterDetails(int(fighter))
+        ## print success to log
+        log('Retrieved event details from sherdog.com: %s' % eventID)
         
-        # print fighter details to log
-        log('Fighter ID:       %s' % fighterDetails['ID'])
-        log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
-        log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
-        log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
-        log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
-        log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
-        log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
-        log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
-        log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
-        log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
-        
-        # construct tuple of arguments for use in constructing sql query
-        fighterTuple = (fighterDetails['ID'], 
-                        fighterDetails['name'].replace('\'', ''),
-                        fighterDetails['nickName'].replace('\'', ''),
-                        fighterDetails['association'].replace('\'', ''),
-                        fighterDetails['height'].replace('\'', ''),
-                        fighterDetails['weight'].replace('\'', ''),
-                        fighterDetails['birthDate'],
-                        fighterDetails['city'].replace('\'', ''),
-                        fighterDetails['country'].replace('\'', ''),
-                        fighterDetails['thumbUrl'])
-        
-        # perform sql query
-        setData("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % fighterTuple)
-        
-        # increment fighter count
-        fighterCount = fighterCount + 1
+        # commit event to database
+        setData()
+    
+    else:
+    
+        ## log error to database
+        log('Error Retrieving event details from sherdog.com: %s' % eventID, xbmc.LOGERROR)
+
+
+def scanFighter(fighter):
+
+    # print status to log
+    log('## Retrieving fighter details from sherdog.com: %s' % fighter)
+    
+    # retrieve fighter details from sherdog.com
+    fighterDetails = getFighterDetails(int(fighter))
+    
+    # print fighter details to log
+    log('Fighter ID:       %s' % fighterDetails['ID'])
+    log('Fighter Name:     %s' % fighterDetails['name'].replace('\'', ''))
+    log('Fighter Nickname: %s' % fighterDetails['nickName'].replace('\'', ''))
+    log('Fighter Assoc.:   %s' % fighterDetails['association'].replace('\'', ''))
+    log('Fighter Height:   %s' % fighterDetails['height'].replace('\'', ''))
+    log('fighter Weight:   %s' % fighterDetails['weight'].replace('\'', ''))
+    log('Fighter D.O.B.:   %s' % fighterDetails['birthDate'])
+    log('Fighter City:     %s' % fighterDetails['city'].replace('\'', ''))
+    log('Fighter Country:  %s' % fighterDetails['country'].replace('\'', ''))
+    log('Fighter Image:    %s' % fighterDetails['thumbUrl'])
+    
+    # construct tuple of arguments for use in constructing sql query
+    fighterTuple = (fighterDetails['ID'], 
+                    fighterDetails['name'].replace('\'', ''),
+                    fighterDetails['nickName'].replace('\'', ''),
+                    fighterDetails['association'].replace('\'', ''),
+                    fighterDetails['height'].replace('\'', ''),
+                    fighterDetails['weight'].replace('\'', ''),
+                    fighterDetails['birthDate'],
+                    fighterDetails['city'].replace('\'', ''),
+                    fighterDetails['country'].replace('\'', ''),
+                    fighterDetails['thumbUrl'])
+    
+    # perform sql query
+    setData("INSERT INTO fighters VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % fighterTuple)
 
 
 def getEvents(promotion = '', fighterID = '', searchStr = '', eventID = ''):
 
     # get events by promotion
     if not promotion == '':
-        return getData("SELECT * FROM events WHERE promotion='%s' ORDER BY date" % promotion)
+        return getData("SELECT * FROM events INNER JOIN library ON events.eventID=library.ID WHERE promotion='%s' ORDER BY date" % promotion)
+        
     # get events by fighter
     elif not fighterID == '':
         return getData("SELECT events.* FROM events INNER JOIN fights ON events.eventID=fights.eventID WHERE fighterID='%s' ORDER BY date" % fighterID)
+    
     # search events
     elif not searchStr == '':
-        return getData("SELECT * FROM events WHERE (eventID LIKE '%s' OR title LIKE '%s' OR promotion LIKE '%s' OR date LIKE '%s' OR venue LIKE '%s' OR city LIKE '%s') ORDER BY date" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+        return getData("SELECT * FROM events INNER JOIN library ON events.eventID=library.ID WHERE (eventID LIKE '%s' OR title LIKE '%s' OR promotion LIKE '%s' OR date LIKE '%s' OR venue LIKE '%s' OR city LIKE '%s') ORDER BY date" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+    
     # get single event details
     elif not eventID == '':
-        return getData("SELECT * FROM events WHERE eventID='%s'" % eventID)
+        return getData("SELECT * FROM events INNER JOIN library ON events.eventID=library.ID WHERE eventID='%s'" % eventID)
+    
     # show all events
     else:
-        return getData("SELECT * FROM events")
+        return getData("SELECT * FROM events INNER JOIN library ON events.eventID=library.ID")
 
 
 def getFighters(searchStr = ''):
@@ -304,6 +365,7 @@ def getFighters(searchStr = ''):
     # search fighters
     if not searchStr == '':
         return getData("SELECT DISTINCT fighters.*, COUNT(*) AS cnt FROM fighters INNER JOIN fights ON (fights.fighterID=fighters.fighterID) WHERE (fighters.fighterID LIKE '%s' OR fighters.name LIKE '%s' OR fighters.nickname LIKE '%s' OR fighters.association LIKE '%s' OR fighters.city LIKE '%s' OR fighters.country LIKE '%s') GROUP BY fighters.fighterID ORDER BY fighters.name" % ("%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%", "%" + searchStr + "%"))
+    
     # show all fighters
     else:
         return getData("SELECT DISTINCT fighters.*, COUNT(*) AS cnt FROM fighters INNER JOIN fights ON (fights.fighterID=fighters.fighterID) GROUP BY fighters.fighterID ORDER BY fighters.name")
@@ -312,14 +374,16 @@ def getFighters(searchStr = ''):
 def getPromotions():
 
     # get all promotions
-    return getData("SELECT DISTINCT promotion FROM events ORDER BY promotion")
+    return getData("SELECT DISTINCT promotion FROM events INNER JOIN library ON events.eventID=library.ID ORDER BY promotion")
 
 
 def getCounts(promotion = '', fighterID = ''):
     
     # get count of events by promotion
     if not promotion == '':
-        return getData("SELECT COUNT(eventID) AS cnt FROM events WHERE promotion='%s'" % promotion)
+        return getData("SELECT COUNT(eventID) AS cnt FROM events INNER JOIN library ON events.eventID=library.ID WHERE promotion='%s'" % promotion)
+    
     # get count of events by promotion
     elif not fighterID == '':
         return getData("SELECT COUNT(eventID) AS cnt FROM fights WHERE fighterID='%s'" % fighterID)
+

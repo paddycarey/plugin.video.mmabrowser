@@ -13,6 +13,7 @@ import xbmcvfs
 
 from resources.lib.utils import *
 from resources.lib.navigation import *
+from resources.lib.library import updateLibrary
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
@@ -28,18 +29,6 @@ try:
     path = urllib.unquote_plus(params["path"])
 except:
     path = "/"
-
-
-def updateLibrary():
-    import resources.lib.library as library
-    library.dialog.create(__addonname__, "MMA Browser", "Loading")
-    library.scanLibrary()
-    library.initLibrary()
-    library.getMissingEvents()
-    library.getMissingFighters()
-    if __addon__.getSetting("checkMissingExtras") == 'true':
-        library.getMissingExtras()
-    library.dialog.close()
 
 log('Script path: %s' % path)
 log('Library path: %s' % __addon__.getSetting("libraryPath"))

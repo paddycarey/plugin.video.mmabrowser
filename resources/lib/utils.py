@@ -11,6 +11,11 @@ import xbmcvfs
 
 from urllib2 import urlopen
 
+# Use json instead of simplejson when python v2.7 or greater
+if sys.version_info < (2, 7):
+     import json as simplejson
+else:
+     import simplejson
 
 ### get addon info
 __addon__             = xbmcaddon.Addon()
@@ -199,3 +204,40 @@ def log(txt='', severity=xbmc.LOGDEBUG):
     message = ('MMA Browser: %s' % txt.encode('utf-8'))
     xbmc.log(msg=message, level=severity)
 
+
+def getDirList(path):
+    dirList = []
+    currentLevelDirList = [path]
+    while True:
+        prevLevelDirList = []
+        if len(currentLevelDirList) > 0:
+            for dirName in currentLevelDirList:
+                prevLevelDirList.append(dirName)
+                dirList.append(dirName)
+            currentLevelDirList = []
+        else:
+            break
+        for dirName in prevLevelDirList:
+            log('Checking for directories in: %s' % dirName)
+            json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } } , "id" : 1 }' % dirName.encode('utf-8').replace('\\', '\\\\'))
+            jsonobject = simplejson.loads(json_response)
+            if jsonobject['result']['files']:
+                for item in jsonobject['result']['files']:
+                    if item['filetype'] == 'directory':
+                        currentLevelDirList.append(item['file'])
+    return dirList
+
+
+def getFileList(path):
+    fileList = []
+    dirList = getDirList(path)
+    for dirName in dirList:
+        log('Checking for files in: %s' % dirName)
+        json_response = xbmc.executeJSONRPC('{ "jsonrpc" : "2.0" , "method" : "Files.GetDirectory" , "params" : { "directory" : "%s" , "sort" : { "method" : "file" } , "media" : "video" } , "id" : 1 }' % dirName.encode('utf-8').replace('\\', '\\\\'))
+        jsonobject = simplejson.loads(json_response)
+        if jsonobject['result']['files']:
+            for item in jsonobject['result']['files']:
+                if item['filetype'] == 'file':
+                    fileList.append(item['file'])
+                    log('Found video: %s' % item['file'])
+    return fileList
